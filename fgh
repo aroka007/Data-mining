@@ -1,1 +1,2 @@
+sapply(tours,function(x) any(is.na(x)))
 
