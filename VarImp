@@ -1,7 +1,7 @@
 library(Amelia,quietly = T)
 library(caret)
 
-
+#Change directory when running##
 tours<-read.csv("Data mining 8480/modeling_data (1).csv", header=TRUE, na.strings=c(".", "NA", "", "?"))
 
 tours$Book_12Mo<-as.factor(tours$Book_12Mo)
