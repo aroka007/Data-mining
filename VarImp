@@ -1,0 +1,56 @@
+library(Amelia,quietly = T)
+library(caret)
+
+
+tours<-read.csv("Data mining 8480/modeling_data (1).csv", header=TRUE, na.strings=c(".", "NA", "", "?"))
+
+tours$Book_12Mo<-as.factor(tours$Book_12Mo)
+#levels(tours$Book_12Mo)<-c("2","1")#not booked is 2
+
+inx <- function (tours, inp.n) { # data: current dataframe; inp.n: position for non-inputs
+  # numeric input indicator
+  indx <- sapply(tours, is.numeric)
+  indx[inp.n]<-FALSE
+  
+  # nominal input indicator
+  index.cat<-sapply(tours, is.factor)
+  index.cat[inp.n]<-FALSE
+  
+  # missing value indicator
+  index.na<-sapply(tours,function(x) any(is.na(x)))
+  index.na[inp.n]<-FALSE
+  
+  data.frame(indx, index.cat, index.na)
+}
+colnames(tours)
+vars<--grep("^(EvalID|Cus_ID|ProdTour_ID|SalesTourID|Trip_No|HH_ID|Book_12Mo)$",names(tours))
+
+missmap(tours[,vars],main = "Missing Map for Tours")
+
+#Routine Update#
+inp.n <- grep("^(EvalID|Cus_ID|ProdTour_ID|SalesTourID|Trip_No|HH_ID|Book_12Mo)$", names(tours))
+inx3<-inx(tours, inp.n) 
+indx<-inx3$indx
+index.cat<-inx3$index.cat
+index.na<-inx3$index.na
+#######################
+
+str(tours)
+##Variable Importance!!!###
+
+# nominal input - chi-square
+chi2pvalues<- sapply(tours[index.cat], 
+                     function(x) chisq.test(x, tours$Book_12Mo)$p.value)
+sort(chi2pvalues)
+
+# numeric input - t stat
+tTestpvalues<-sapply(tours[indx], 
+                     function(x) t.test(x ~ tours$Book_12Mo)$p.value)
+sort(tTestpvalues)
+
+#ROC
+rocValues<- filterVarImp(x = tours[,vars], y = tours$Book_12Mo)
+rocValues[order(-rocValues$X1),]
+
+#Past trips most important!!#
+
