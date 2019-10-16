@@ -1,11 +1,27 @@
 library(Amelia,quietly = T)
-library(caret)
+library(caret,quietly = T)
 
-#Change directory when running##
+
 tours<-read.csv("Data mining 8480/modeling_data (1).csv", header=TRUE, na.strings=c(".", "NA", "", "?"))
 
 tours$Book_12Mo<-as.factor(tours$Book_12Mo)
 #levels(tours$Book_12Mo)<-c("2","1")#not booked is 2
+
+##Turn inputs into factors:#####
+tours$Recommend_GAT<-as.factor(tours$Recommend_GAT)
+tours$TravelAgain<-as.factor(tours$TravelAgain)
+tours$Groups_Interest<-as.factor(tours$Groups_Interest)
+tours$Reference<-as.factor(tours$Reference)
+tours$Overall_Impression<-as.factor(tours$Overall_Impression)
+tours$Pre_Departure<-as.factor(tours$Pre_Departure)
+tours$Flight_Itin<-as.factor(tours$Flight_Itin)
+tours$TD_Overall<-as.factor(tours$TD_Overall)
+tours$Extension<-as.factor(tours$Extension)
+tours$Insurance<-as.factor(tours$Insurance)
+tours$FltGty<-as.factor(tours$FltGty)
+tours$Complaint_Event<-as.factor(tours$Complaint_Event)
+tours$Voucher_Event<-as.factor(tours$Voucher_Event)
+#################
 
 inx <- function (tours, inp.n) { # data: current dataframe; inp.n: position for non-inputs
   # numeric input indicator
@@ -22,10 +38,13 @@ inx <- function (tours, inp.n) { # data: current dataframe; inp.n: position for 
   
   data.frame(indx, index.cat, index.na)
 }
-colnames(tours)
+
+#Check missing vals
+names(tours)[index.na==T]
+#missmap(tours[,vars],main = "Missing Map for Tours")
+
 vars<--grep("^(EvalID|Cus_ID|ProdTour_ID|SalesTourID|Trip_No|HH_ID|Book_12Mo)$",names(tours))
 
-missmap(tours[,vars],main = "Missing Map for Tours")
 
 #Routine Update#
 inp.n <- grep("^(EvalID|Cus_ID|ProdTour_ID|SalesTourID|Trip_No|HH_ID|Book_12Mo)$", names(tours))
@@ -35,7 +54,6 @@ index.cat<-inx3$index.cat
 index.na<-inx3$index.na
 #######################
 
-str(tours)
 ##Variable Importance!!!###
 
 # nominal input - chi-square
@@ -53,4 +71,3 @@ rocValues<- filterVarImp(x = tours[,vars], y = tours$Book_12Mo)
 rocValues[order(-rocValues$X1),]
 
 #Past trips most important!!#
-
