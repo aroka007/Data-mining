@@ -3,25 +3,27 @@ library(caret,quietly = T)
 
 
 tours<-read.csv("Data mining 8480/modeling_data (1).csv", header=TRUE, na.strings=c(".", "NA", "", "?"))
-
+str(tours)
 tours$Book_12Mo<-as.factor(tours$Book_12Mo)
 #levels(tours$Book_12Mo)<-c("2","1")#not booked is 2
 
-##Turn inputs into factors:#####
+#Turn inputs into factors:
 tours$Recommend_GAT<-as.factor(tours$Recommend_GAT)
 tours$TravelAgain<-as.factor(tours$TravelAgain)
 tours$Groups_Interest<-as.factor(tours$Groups_Interest)
 tours$Reference<-as.factor(tours$Reference)
-tours$Overall_Impression<-as.factor(tours$Overall_Impression)
-tours$Pre_Departure<-as.factor(tours$Pre_Departure)
-tours$Flight_Itin<-as.factor(tours$Flight_Itin)
-tours$TD_Overall<-as.factor(tours$TD_Overall)
+
+tours$Overall_Impression<-factor(tours$Overall_Impression,ordered = T)
+tours$Pre_Departure<-factor(tours$Pre_Departure,ordered = T)
+tours$Flight_Itin<-factor(tours$Flight_Itin,ordered=T)
+tours$TD_Overall<-factor(tours$TD_Overall,ordered = T)
+
 tours$Extension<-as.factor(tours$Extension)
 tours$Insurance<-as.factor(tours$Insurance)
 tours$FltGty<-as.factor(tours$FltGty)
 tours$Complaint_Event<-as.factor(tours$Complaint_Event)
 tours$Voucher_Event<-as.factor(tours$Voucher_Event)
-#################
+
 
 inx <- function (tours, inp.n) { # data: current dataframe; inp.n: position for non-inputs
   # numeric input indicator
