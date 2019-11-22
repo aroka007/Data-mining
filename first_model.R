@@ -222,7 +222,7 @@ reg.class <- as.factor(ifelse(reg.step.prob >= regThresh$threshold, 1,0))
 reg.fscore<-confusionMatrix(table(reg.class,tours.imp[!split,]$Book_12Mo),
                             positive = "1")$byClass["F1"]
 
-reg.fscore  # f-score=0.0.561067
+reg.fscore
 
 reg.results <- confusionMatrix(table(reg.class,tours[!split,]$Book_12Mo),
                 positive = "1", mode= "everything")
@@ -309,13 +309,15 @@ ann.class <- as.factor(ifelse(ann.prob >= annThresh$threshold, 1,0))
 ann.fscore<-confusionMatrix(table(ann.class,tours[!split,]$Book_12Mo),
                             positive = "1")$byClass["F1"]
 
-ann.fscore  # f-score=0.5838115
+ann.fscore  # f-score=0.5125
 
 ann.results <- confusionMatrix(table(ann.class,tours[!split,]$Book_12Mo),
                   positive = "1", mode= "everything")
+
+
 ann.results
 
 
 
-reg.results
-
+reg.results # f-score=0.5132
+reg.fscore
