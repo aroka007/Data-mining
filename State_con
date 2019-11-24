@@ -1,0 +1,168 @@
+dat <- read.csv("D:/Google Drive/Math/Data Mining/Project/modeling_data.csv", 
+                header=TRUE, na.strings=c(".", "NA", "", "?"))
+
+dat$Book_12Mo <- as.factor(dat$Book_12Mo)
+
+# library(readxl)
+gdp <- read_excel("D:/Google Drive/Math/Data Mining/Project/gdp.xlsx", sheet=1)
+
+# library(caTools)
+set.seed(27947)
+split = sample.split(dat$Book_12Mo, SplitRatio = 0.5) 
+split.valid <-!split
+split.test <- !split
+split2 <- sample.split(dat$Book_12Mo[!split], SplitRatio = 0.5)
+split.valid[split.valid == TRUE] = split2
+split.test[split.test == TRUE] = !split2
+
+prop <- dat[split,] %>% group_by(State, Book_12Mo) %>% tally() %>%
+  mutate(pct=n/sum(n)) %>% filter(Book_12Mo==1)
+prop1 <- dat[split,] %>% group_by(State, Book_12Mo) %>% tally() %>%
+  mutate(pct=n/sum(n)) %>% filter(Book_12Mo==0)
+prop9 <- dat %>% group_by(State, Book_12Mo) %>% tally() %>%
+  mutate(pct=n/sum(n))
+
+prop <- dat[split,] %>% group_by(State, Book_12Mo) %>% tally() %>%
+  mutate(pct=n/sum(n)) %>% filter(Book_12Mo==1)
+prop1 <- dat[split,] %>% group_by(State, Book_12Mo) %>% tally() %>%
+  mutate(pct=n/sum(n)) %>% filter(Book_12Mo==0)
+prop9 <- dat %>% group_by(State, Book_12Mo) %>% tally() %>%
+  mutate(pct=n/sum(n))
+
+ind <- which(is.na(match(prop$State, gdp$Abb)))
+canada <- prop[ind,]
+prop <- prop[-ind,]
+
+states <- levels(dat$State)
+ind <- which(is.na(match(states, gdp$Abb)))
+states[ind]
+prop9a <- prop9[which(prop9$State %in% states[ind]),]
+
+high <- prop$State[which(prop$pct > 0.279)]
+high1 <- prop9a$State[which(prop9a$Book_12Mo==1 & prop9a$pct >0.279)]
+high <- c(high, high1)
+
+med <- prop$State[which(prop$pct <0.279 & prop$pct>0.2238)]
+med1 <- prop9a$State[which(prop9a$Book_12Mo==1 & prop9a$pct <0.279 & prop9a$pct>0.2238)]
+med <- c(med,med1)
+
+poor <- prop$State[which(prop$pct <0.2238 & prop$size<250 | prop$State== "OH")]
+poor <- poor[-c(2,22)]
+poor1 <- prop9a$State[which(prop9a$Book_12Mo==1 & prop9a$pct <0.2238)]
+poor2 <- prop9$State[which(prop9$State=="AK" & prop9$Book_12Mo==1)]
+poor <-c(poor,poor1,poor2,24,42,50,52,55,56,57,58,61,70,71,72)
+
+fair <- prop$State[which(prop$pct <0.2238 & prop$size >250 | prop$State== "AZ"|prop$State== "WA")]
+fair <- fair[-7]
+xxx <-c(high, med, poor, fair)
+
+dat$State_con <- as.character(dat$State)
+dat$State_con[which(dat$State_con %in% states[high])] = "high"
+dat$State_con[which(dat$State_con %in% states[med])] = "med"
+dat$State_con[which(dat$State_con %in% states[fair])] = "fair"
+dat$State_con[which(dat$State_con %in% states[poor])] = "poor"
+dat$State_con <- as.factor(dat$State_con)
+levels(dat$State_con)
+
+
+####################################################################################
+###################################### for analysis ################################
+dat <- read.csv("D:/Google Drive/Math/Data Mining/Project/modeling_data.csv", 
+                 header=TRUE, na.strings=c(".", "NA", "", "?"))
+
+# library(readxl)
+gdp <- read_excel("D:/Google Drive/Math/Data Mining/Project/gdp.xlsx", sheet=1)   
+
+dat$Book_12Mo <- as.factor(dat$Book_12Mo)
+dat$Recommend_GAT <- as.factor(dat$Recommend_GAT)
+dat$TravelAgain <- as.factor(dat$TravelAgain)
+dat$Groups_Interest <- as.factor(dat$Groups_Interest)
+
+# library(caTools)
+set.seed(27947)
+split = sample.split(dat$Book_12Mo, SplitRatio = 0.5) 
+split.valid <-!split
+split.test <- !split
+split2 <- sample.split(dat$Book_12Mo[!split], SplitRatio = 0.5)
+split.valid[split.valid == TRUE] = split2
+split.test[split.test == TRUE] = !split2
+
+prop <- dat[split,] %>% group_by(State, Book_12Mo) %>% tally() %>%
+  mutate(pct=n/sum(n)) %>% filter(Book_12Mo==1)
+prop1 <- dat[split,] %>% group_by(State, Book_12Mo) %>% tally() %>%
+  mutate(pct=n/sum(n)) %>% filter(Book_12Mo==0)
+prop9 <- dat %>% group_by(State, Book_12Mo) %>% tally() %>%
+  mutate(pct=n/sum(n))
+
+ind <- which(is.na(match(prop$State, gdp$Abb)))
+canada <- prop[ind,]
+prop <- prop[-ind,]
+
+prop$size <- prop$n/prop$pct 
+
+ind <- match(prop$State, gdp$Abb)
+prop$gdp <- gdp$`2006`[ind]
+
+prop$gdp1 <- cut(prop$gdp, breaks=c(24000,35376,39420,100000)) 
+levels(prop$gdp1)<-c(1,2,3)
+
+prop$gdp2<- cut(prop$gdp, breaks=c(24000,33017,35376,39420,100000)) 
+levels(prop$gdp2)<-c("1Q","2Q","3Q","4Q")
+
+ggplot(prop, aes(size,pct, size=gdp1,color=gdp1))+geom_point()+
+  geom_text(aes(label=State),hjust =1,vjust=-1)+scale_size_discrete(range = c(5,9,14)) +
+  geom_hline(yintercept =0.22388, linetype ="dashed",color="red") +
+  geom_vline(xintercept = 100, linetype ="dashed",color="green")
+
+ggplot(prop, aes(size,pct,color=gdp2,size=gdp2,size = 6))+geom_point()+
+  geom_text(aes(label=State),hjust =1,vjust=-1)+ scale_size_discrete(range = c(5,8,11,14)) +
+  geom_hline(yintercept =0.22388, linetype ="dashed",color="red") +
+  geom_vline(xintercept = 100, linetype ="dashed",color="green") +
+  guides(color = guide_legend(title="GDP per capita"),size = guide_legend(title="GDP per capita"))
+
+states <- levels(dat$State)
+ind <- which(is.na(match(states, gdp$Abb)))
+states[ind]
+prop9a <- prop9[which(prop9$State %in% states[ind]),]
+
+length(xxx)
+
+high <- prop$State[which(prop$pct > 0.279)]
+high1 <- prop9a$State[which(prop9a$Book_12Mo==1 & prop9a$pct >0.279)]
+high <- c(high, high1)
+
+med <- prop$State[which(prop$pct <0.279 & prop$pct>0.2238)]
+med1 <- prop9a$State[which(prop9a$Book_12Mo==1 & prop9a$pct <0.279 & prop9a$pct>0.2238)]
+med <- c(med,med1)
+
+poor <- prop$State[which(prop$pct <0.2238 & prop$size<250 | prop$State== "OH")]
+poor <- poor[-c(2,22)]
+poor1 <- prop9a$State[which(prop9a$Book_12Mo==1 & prop9a$pct <0.2238)]
+poor2 <- prop9$State[which(prop9$State=="AK" & prop9$Book_12Mo==1)]
+poor <-c(poor,poor1,poor2,24,42,50,52,55,56,57,58,61,70,71,72)
+
+fair <- prop$State[which(prop$pct <0.2238 & prop$size >250 | prop$State== "AZ"|prop$State== "WA")]
+fair <- fair[-7]
+xxx <-c(high, med, poor, fair)
+
+dat$State_con <- as.character(dat$State)
+dat$State_con[which(dat$State_con %in% states[high])] = "high"
+dat$State_con[which(dat$State_con %in% states[med])] = "med"
+dat$State_con[which(dat$State_con %in% states[fair])] = "fair"
+dat$State_con[which(dat$State_con %in% states[poor])] = "poor"
+dat$State_con <- as.factor(dat$State_con)
+levels(dat$State_con)
+
+ggplot(dat, aes(State_con)) +
+  geom_bar() +
+  theme(axis.title.x = element_blank(),
+        axis.text = element_text(size = 22, face="bold"))
+
+prop <- dat %>% group_by(State_con, Book_12Mo) %>% tally() %>% mutate(pct=n/sum(n))
+ggplot(prop, aes(State_con, pct, fill=Book_12Mo)) +
+  geom_bar(stat = "identity") +
+  theme(axis.title.x = element_text(size = 16, face="bold"),
+        axis.title.y = element_text(size = 16, face="bold"),
+        axis.text.x = element_text(size = 12)) 
+grid.arrange(p1, p2,ncol = 2)
+
