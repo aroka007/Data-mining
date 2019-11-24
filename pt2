@@ -88,10 +88,10 @@ binned <- tree.bins(data = consldt, y = Book_12Mo,
 ####################################
 
 #Add consolidated categories for training data to new.tours df
-new.tours[split,"TourCode_Groups"] <-as.factor(binned[[1]]$Categories[match(new.tours[split,"TourCode"],binned[[1]]$TourCode)])# ###########################################################################################
-new.tours[split,"TourDate_Groups"] <- as.factor(binned[[2]]$Categories[match(new.tours[split,"TourDate"],binned[[2]]$TourDate)])# ###########################################################################################
-new.tours[split,"Outbound_Domestic_Gateway_Groups"] <- as.factor(binned[[3]]$Categories[match(new.tours[split,"Outbound_Domestic_Gateway"],binned[[3]]$Outbound_Domestic_Gateway)])# ###########################################################################################
-new.tours[split,"Return_Domestic_Gateway_Groups"] <- as.factor(binned[[4]]$Categories[match(new.tours[split,"Return_Domestic_Gateway"],binned[[4]]$Return_Domestic_Gateway)])# ###########################################################################################
+new.tours["TourCode_Groups"] <- as.factor(binned[[1]]$Categories[match(new.tours$TourCode,binned[[1]]$TourCode)])
+new.tours[split,"TourDate_Groups"] <- as.factor(binned[[2]]$Categories[match(new.tours$TourDate,binned[[2]]$TourDate)])# ###########################################################################################
+new.tours[split,"Outbound_Domestic_Gateway_Groups"] <- as.factor(binned[[3]]$Categories[match(new.tours$Outbound_Domestic_Gateway,binned[[3]]$Outbound_Domestic_Gateway)])# ###########################################################################################
+new.tours[split,"Return_Domestic_Gateway_Groups"] <- as.factor(binned[[4]]$Categories[match(new.tours$Return_Domestic_Gateway,binned[[4]]$Return_Domestic_Gateway)])# ###########################################################################################
 
 new.tours$State_Cons<-dat$State_con
 #new.tours$State<-NULL
@@ -395,7 +395,7 @@ RF <- randomForest(Book_12Mo~., data=tours.rf[split,vars1],
                    ntree = 100, 
                    strata= tours.rf$Book_12Mo[split], 
                    sampsize=c(minor,minor),
-                   importance =TRUE,mtry=30)#from below
+                   importance =TRUE)#from below
 #print(RF)
 plot(RF)  
 
