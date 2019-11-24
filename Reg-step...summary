@@ -1,0 +1,81 @@
+Call:
+glm(formula = Book_12Mo ~ Past_Trips + Email + TourDate_Groups + 
+    Outbound_Domestic_Gateway_Groups + Age + TravelAgain + TourCode_Groups + 
+    Excellent_Optionals + Pax_Category + Voucher_Event, family = binomial, 
+    data = tours.mdl[split, vars])
+
+Deviance Residuals: 
+    Min       1Q   Median       3Q      Max  
+-2.6592  -0.6624  -0.4233  -0.2004   2.9080  
+
+Coefficients:
+                                        Estimate Std. Error z value Pr(>|z|)
+(Intercept)                             -3.73177    0.51479  -7.249 4.19e-13
+Past_Trips1 Trip                         0.55481    0.06466   8.580  < 2e-16
+Past_Trips2 Trips                        1.24418    0.06278  19.817  < 2e-16
+EmailBounced                            -1.46862    0.19569  -7.505 6.15e-14
+EmailUnavailable                        -1.01350    0.05717 -17.729  < 2e-16
+TourDate_GroupsGroup.2                   0.72491    0.05420  13.375  < 2e-16
+TourDate_GroupsGroup.3                   1.27456    0.09066  14.059  < 2e-16
+TourDate_GroupsGroup.4                   1.56920    0.16881   9.296  < 2e-16
+Outbound_Domestic_Gateway_GroupsGroup.2  0.46629    0.05190   8.985  < 2e-16
+Outbound_Domestic_Gateway_GroupsGroup.3  1.82298    0.25749   7.080 1.44e-12
+Age40-44                                -0.05357    0.21007  -0.255 0.798705
+Age45-49                                -0.09521    0.18609  -0.512 0.608915
+Age50-54                                 0.17829    0.16454   1.084 0.278564
+Age55-59                                 0.29021    0.15551   1.866 0.062012
+Age60-69                                 0.51616    0.14657   3.522 0.000429
+Age70-79                                 0.32979    0.15364   2.146 0.031834
+AgeNo Age                               -0.69885    0.24458  -2.857 0.004271
+AgeOver 80                              -0.41409    0.16529  -2.505 0.012239
+AgeUnder 30                             -0.49752    0.19345  -2.572 0.010115
+TravelAgain1                            -0.41348    0.22800  -1.814 0.069751
+TravelAgain2                             0.68263    0.17400   3.923 8.74e-05
+TourCode_GroupsGroup.2                   0.32270    0.05337   6.046 1.48e-09
+TourCode_GroupsGroup.3                   0.76885    0.11752   6.542 6.06e-11
+TourCode_GroupsGroup.4                   1.05653    0.28760   3.674 0.000239
+Excellent_Optionals                      0.21245    0.04028   5.275 1.33e-07
+Pax_CategoryGC                           0.88022    0.47911   1.837 0.066181
+Pax_CategoryGM                           0.30344    0.46092   0.658 0.510326
+Pax_CategoryIN                           0.62298    0.45909   1.357 0.174789
+Voucher_Event1                           0.74361    0.19635   3.787 0.000152
+                                           
+(Intercept)                             ***
+Past_Trips1 Trip                        ***
+Past_Trips2 Trips                       ***
+EmailBounced                            ***
+EmailUnavailable                        ***
+TourDate_GroupsGroup.2                  ***
+TourDate_GroupsGroup.3                  ***
+TourDate_GroupsGroup.4                  ***
+Outbound_Domestic_Gateway_GroupsGroup.2 ***
+Outbound_Domestic_Gateway_GroupsGroup.3 ***
+Age40-44                                   
+Age45-49                                   
+Age50-54                                   
+Age55-59                                .  
+Age60-69                                ***
+Age70-79                                *  
+AgeNo Age                               ** 
+AgeOver 80                              *  
+AgeUnder 30                             *  
+TravelAgain1                            .  
+TravelAgain2                            ***
+TourCode_GroupsGroup.2                  ***
+TourCode_GroupsGroup.3                  ***
+TourCode_GroupsGroup.4                  ***
+Excellent_Optionals                     ***
+Pax_CategoryGC                          .  
+Pax_CategoryGM                             
+Pax_CategoryIN                             
+Voucher_Event1                          ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 12475  on 11729  degrees of freedom
+Residual deviance: 10033  on 11701  degrees of freedom
+AIC: 10091
+
+Number of Fisher Scoring iterations: 5
