@@ -72,6 +72,8 @@ split2<-sample.split(new.tours$Book_12Mo[!split],SplitRatio = 1/2)
 split.valid[split.valid==TRUE]= split2
 split.test[split.test==TRUE]= !split2
 
+#summary(new.tours$Book_12Mo[split.valid])
+
 #$ Look into Age and Tour Days...
 #State and tour region(just to look into, tour code can be used instead of it) use WOE
 str(new.tours)
@@ -94,63 +96,64 @@ new.tours["Outbound_Domestic_Gateway_Groups"] <- as.factor(binned[[3]]$Categorie
 new.tours["Return_Domestic_Gateway_Groups"] <- as.factor(binned[[4]]$Categories[match(new.tours$Return_Domestic_Gateway,binned[[4]]$Return_Domestic_Gateway)])# ###########################################################################################
 
 new.tours$State_Cons<-dat$State_con
+
 #new.tours$State<-NULL
-
-#str(new.tours[split,var1])
-########################################################################################
-####################################
-######### Decision Tree ############
-####################################
-set.seed(27947)
-library(rpart)
-var1<--grep("^(EvalID|TourCode|TourDate|State|Outbound_Domestic_Gateway|Return_Domestic_Gateway)$",names(new.tours))
-Dtree<- rpart(Book_12Mo~.,data = new.tours[split,var1], control = rpart.control(cp=.001))
-
-
-library(pROC)
-library(caret) 
-cp.seq=Dtree$cptable[,1]
-fscore<-numeric()
-fscore[1]<-0  # Set root node F-score zero
-for (i in 2:length(cp.seq)) {
-  tree.prob = predict(prune(Dtree, cp=cp.seq[i]), new.tours[split.valid,var1],type="prob")[,2] 
-  rocCurve.tree <- roc(new.tours[split.valid,]$Book_12Mo, tree.prob, quiet=TRUE)
-  treeThresh <-  coords(rocCurve.tree, x = "best", best.method = "closest.topleft", transpose = FALSE)
-  tree.class <- as.factor(ifelse(tree.prob >= treeThresh$threshold, 1,0))
-  fscore[i]<-confusionMatrix(table(tree.class,new.tours[split2,var1]$Book_12Mo),
-                             positive = "1")$byClass["F1"]
-}
-
-plot(Dtree$cptable[,'nsplit']+1,fscore,
-     type="o", xlab="Number of Leaves", ylab="F-score")
-#tree$cptable
-# Final model
-tree.final=prune(Dtree,cp=cp.seq[fscore==max(fscore)]) #0.5067185
-library(partykit)
-# plot(as.party(tree.final))
-# tree.final$variable.importance
-
-## Model Evaluation: Lift Graph ##
-test.prob<-predict(tree.final, new.tours[split.test,var1], type = "prob")[,2]
-evaluate.prob <- predict(tree.final, new.tours[split.valid,var1], type = "prob")[,2]
-train.prob <- predict(tree.final, new.tours[split,var1], type = "prob")[,2]
-
-library(ROCR)
-pred.test<-prediction(test.prob, new.tours[split.test,var1]$Book_12Mo)
-pred.eva <- prediction(evaluate.prob, new.tours[split.valid,var1]$Book_12Mo)
-pred<-prediction(train.prob, new.tours[split,var1]$Book_12Mo)
-
-perf.test<-performance(pred.test,"lift","rpp")
-perf.eva <- performance(pred.eva,"lift","rpp")
-perf <- performance(pred,"lift","rpp")
-
-plot(perf, col='blue', type="b", main="Lift Curve")
-plot(perf.eva, col= 'red', type="b",add = TRUE,main="Lift Curve")
-plot(perf.test, col= 'green', type="b",add = TRUE,main="Lift Curve")
-
-
-legend('topright', legend=c('train', 'validation','test'), col=c("blue","red","green"),lty=c(1,1))
-#######################################################################################
+# 
+# #str(new.tours[split,var1])
+# ########################################################################################
+# ####################################
+# ######### Decision Tree ############
+# ####################################
+# set.seed(27947)
+# library(rpart)
+# var1<--grep("^(EvalID|TourCode|TourDate|State|Outbound_Domestic_Gateway|Return_Domestic_Gateway)$",names(new.tours))
+# Dtree<- rpart(Book_12Mo~.,data = new.tours[split,var1], control = rpart.control(cp=.001))
+# 
+# 
+# library(pROC)
+# library(caret) 
+# cp.seq=Dtree$cptable[,1]
+# fscore<-numeric()
+# fscore[1]<-0  # Set root node F-score zero
+# for (i in 2:length(cp.seq)) {
+#   tree.prob = predict(prune(Dtree, cp=cp.seq[i]), new.tours[split.valid,var1],type="prob")[,2] 
+#   rocCurve.tree <- roc(new.tours[split.valid,]$Book_12Mo, tree.prob, quiet=TRUE)
+#   treeThresh <-  coords(rocCurve.tree, x = "best", best.method = "closest.topleft", transpose = FALSE)
+#   tree.class <- as.factor(ifelse(tree.prob >= treeThresh$threshold, 1,0))
+#   fscore[i]<-confusionMatrix(table(tree.class,new.tours[split.valid,var1]$Book_12Mo),
+#                              positive = "1")$byClass["F1"]
+# }
+# 
+# plot(Dtree$cptable[,'nsplit']+1,fscore,
+#      type="o", xlab="Number of Leaves", ylab="F-score")
+# #tree$cptable
+# # Final model
+# tree.final=prune(Dtree,cp=cp.seq[fscore==max(fscore)]) #0.5067185
+# library(partykit)
+# # plot(as.party(tree.final))
+# # tree.final$variable.importance
+# 
+# ## Model Evaluation: Lift Graph ##
+# test.prob<-predict(tree.final, new.tours[!split2,var1], type = "prob")[,2]
+# evaluate.prob <- predict(tree.final, new.tours[split2,var1], type = "prob")[,2]
+# train.prob <- predict(tree.final, new.tours[split,var1], type = "prob")[,2]
+# 
+# library(ROCR)
+# pred.test<-prediction(test.prob, new.tours[!split2,var1]$Book_12Mo)
+# pred.eva <- prediction(evaluate.prob, new.tours[split2,var1]$Book_12Mo)
+# pred<-prediction(train.prob, new.tours[split,var1]$Book_12Mo)
+# 
+# perf.test<-performance(pred.test,"lift","rpp")
+# perf.eva <- performance(pred.eva,"lift","rpp")
+# perf <- performance(pred,"lift","rpp")
+# 
+# plot(perf, col='blue', type="b", main="Lift Curve")
+# plot(perf.eva, col= 'red', type="b",add = TRUE,main="Lift Curve")
+# plot(perf.test, col= 'green', type="b",add = TRUE,main="Lift Curve")
+# 
+# 
+# legend('topright', legend=c('train', 'validation','test'), col=c("blue","red","green"),lty=c(1,1))
+# #######################################################################################
 
 ######################
 ####Transformation ####
@@ -177,14 +180,16 @@ library(Amelia)
 #missmap(tours.xf)
 sort(sapply(tours.xf, function(x) sum(is.na(x))),decreasing = T)
 
+#just remove the variables that were consolidated!!!
+tours.xf[c("TourCode","TourDate","Outbound_Domestic_Gateway","Outbound_Connect_Gateway1","Return_Connect_Gateway1","Return_Domestic_Gateway")]=NULL
+
 ######################
 ##### Imputation #####
 ######################
-any(is.na(tours$Age))
 #Update#
 tours.imp<-tours.xf
 #removed them bcuz already have consolidated categories column for them plus we only impute using training data
-tours.imp[c("TourCode","TourDate","Outbound_Domestic_Gateway","Outbound_Connect_Gateway1","Return_Connect_Gateway1","Return_Domestic_Gateway")]=NULL
+#tours.imp[c("TourCode","TourDate","Outbound_Domestic_Gateway","Outbound_Connect_Gateway1","Return_Connect_Gateway1","Return_Domestic_Gateway")]=NULL
 
 str(tours.imp)
 #sort(sapply(tours.imp, function(x) sum(is.na(x))),decreasing = T)
@@ -197,7 +202,7 @@ index.cat<-inx3$index.cat
 index.na<-inx3$index.na
 
 # check missing data
-names(tours.imp)[index.na==TRUE]
+#names(tours.imp)[index.na==TRUE]
 
 # numeric impute: By mean #
 Mean<-sapply(tours.imp[split,indx],means)##remove in scoring already saved!!
@@ -224,7 +229,7 @@ tours.imp[grep("NA$",names(tours.imp))]<-lapply(
 library(caret)
 
 tours.mdl<-tours.imp
-vars<--grep("^(EvalID|State|Email.NA|Outbound_Intr_Gateway.NA|Outbound_Connections.NA|Return_Intr_Gateway.NA|Outbound_Domestic_Gateway_Groups.NA|TourCode_Groups.NA|Return_Connect_Gateway1_Groups.NA|Return_Domestic_Gateway_Groups.NA)$",names(tours.imp))
+vars<--grep("^(EvalID|State|Email.NA|Outbound_Intr_Gateway.NA|Outbound_Connections.NA|Return_Intr_Gateway.NA|Outbound_Domestic_Gateway_Groups.NA|TourCode_Groups.NA|Return_Connect_Gateway1_Groups.NA|Return_Domestic_Gateway_Groups.NA)$",names(tours.imp))#just additoinal variables, doesnt affect
 
 levels(tours.mdl$Book_12Mo)
 
@@ -246,13 +251,25 @@ regThresh <-  coords(rocCurve.reg, x = "best", best.method = "closest.topleft", 
 reg.class <- as.factor(ifelse(reg.step.prob >= regThresh$threshold, 1,0))
 reg.fscore<-confusionMatrix(table(reg.class,new.tours[split.valid,vars]$Book_12Mo),
                             positive = "1")$byClass["F1"]
-reg.fscore #bic f score=0.5042664  
+reg.fscore
+#bic f score=0.5042664     
+
+
+# #test
+# reg.test.prob<-predict(reg.step,tours.mdl[split.test, vars], type = "response")
+# reg.test.class <- as.factor(ifelse(reg.test.prob >= regThresh$threshold, 1,0))
+# reg.fscore<-confusionMatrix(table(reg.test.class,new.tours[split.test,vars]$Book_12Mo),
+# positive = "1")$byClass["F1"]
+# reg.fscore #f-score =0.5022099 on test set. not that bad
+
+
+
 
 #Backwards
 # reg.bwd <- step(full, direction="backward",k=log(n), trace = FALSE)
 # # Validation F-score
-# reg.bwd.prob<-predict(reg.bwd,tours.mdl[split.valid, vars], type = "response") 
-# rocCurve.reg <- roc(tours.mdl[split.valid,]$Book_12Mo, reg.bwd.prob, quiet = TRUE)
+# reg.bwd.prob<-predict(reg.bwd,tours.mdl[split2, vars], type = "response") 
+# rocCurve.reg <- roc(tours.mdl[split2,]$Book_12Mo, reg.bwd.prob, quiet = TRUE)
 # regThresh <-  coords(rocCurve.reg, x = "best", best.method = "closest.topleft", transpose = FALSE)
 # #regThresh
 # reg.class <- as.factor(ifelse(reg.bwd.prob >= regThresh$threshold, 1,0))
@@ -263,12 +280,12 @@ reg.fscore #bic f score=0.5042664
 # #Forward
 # reg.fwd <- step(null, scope=formula(full), direction="forward",trace=FALSE,k=log(n))
 # # Validation F-score
-# reg.fwd.prob<-predict(reg.fwd,tours.mdl[split.valid, vars], type = "response") 
-# rocCurve.reg <- roc(tours.mdl[split.valid,]$Book_12Mo, reg.fwd.prob, quiet = TRUE)
+# reg.fwd.prob<-predict(reg.fwd,tours.mdl[split2, vars], type = "response") 
+# rocCurve.reg <- roc(tours.mdl[split2,]$Book_12Mo, reg.fwd.prob, quiet = TRUE)
 # regThresh <-  coords(rocCurve.reg, x = "best", best.method = "closest.topleft", transpose = FALSE)
 # #regThresh
 # reg.class <- as.factor(ifelse(reg.fwd.prob >= regThresh$threshold, 1,0))
-# reg.fscore<-confusionMatrix(table(reg.class,new.tours[split.valid,vars]$Book_12Mo),
+# reg.fscore<-confusionMatrix(table(reg.class,new.tours[split2,vars]$Book_12Mo),
 #                             positive = "1")$byClass["F1"]
 # reg.fscore   #f score usingbic= 0.516782    
 
@@ -276,7 +293,7 @@ reg.fscore #bic f score=0.5042664
 ####### Artificial Neural Network ######
 ########################################
 
-dt<-tours.imp
+#dt<-tours.imp
 #####################
 ## ANN Preparation ##
 #####################
@@ -308,9 +325,8 @@ y.train<- as.matrix(tours.ann.encode[split,"Book_12Mo"])
 x.valid<-as.matrix(tours.ann.encode[split.valid,-inp.n])
 y.valid<-as.matrix(tours.ann.encode[split.valid,"Book_12Mo"])
 
-
-
-####################
+# x.test<-as.matrix(tours.ann.encode[split.test,-inp.n])
+# ####################
 ### ANN Building ###
 ####################
 library(keras)
@@ -371,11 +387,16 @@ ann.class <- as.factor(ifelse(ann.prob >= annThresh$threshold, 1,0))
 ann.fscore<-confusionMatrix(table(ann.class,tours.ann[split.valid,vars]$Book_12Mo),
                             positive = "1")$byClass["F1"]
 
-ann.fscore  # 
+ann.fscore  # f-score=F1 0.5035705 
 
-# confusionMatrix(table(ann.class,tours.ann[split.valid,vars]$Book_12Mo),
-#                 positive = "1", mode= "everything")
+# # #Test data#
+# ann.prob.test<-predict_proba(ann.select,x.test)
+# ann.class.test <- as.factor(ifelse(ann.prob.test >= annThresh$threshold, 1,0))
 # 
+# ann.fscore.test<-confusionMatrix(table(ann.class.test,tours.ann[split.test,vars]$Book_12Mo),
+# positive = "1")$byClass["F1"]
+# 
+# ann.fscore #same to validation one
 
 
 #######################
@@ -410,6 +431,7 @@ fscore #0.5293922
 
  
 
+
 # RF$importance
 # varImpPlot(RF) 
 
@@ -439,3 +461,25 @@ fscore #0.5293922
 # m.best<- m[which.max(fscore.seq)]
 # max(fscore.seq)
 # #
+
+#Test Data#
+# RF.class.test<- predict(RF, newdata=tours.rf[split.test,], type="response")
+# fscore<-confusionMatrix(table(RF.class.test,tours.rf[split.test,]$Book_12Mo),
+#                         positive = "1")$byClass["F1"]  
+# fscore #.53 so performs well on test
+
+
+
+######################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
