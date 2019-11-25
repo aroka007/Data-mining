@@ -403,10 +403,10 @@ plot(RF)
 
 # Make predictions #
 library(caret)
-RF.class<- predict(RF, newdata=tours.rf[split2,], type="response")
-fscore<-confusionMatrix(table(RF.class,tours.rf[split2,]$Book_12Mo),
+RF.class<- predict(RF, newdata=tours.rf[split.valid,], type="response")
+fscore<-confusionMatrix(table(RF.class,tours.rf[split.valid,]$Book_12Mo),
                         positive = "1")$byClass["F1"]  
-fscore #0.714738 
+fscore #0.5262805  
 # RF$importance
 # varImpPlot(RF) 
 
@@ -423,8 +423,8 @@ fscore #0.714738
 #                      importance =TRUE,
 #                      mtry=m.best)
 # 
-#   rf.class<- predict(rf, newdata=tours.rf[split2,], type="response")
-#   fscore.seq[i]<-confusionMatrix(table(rf.class,tours.rf$Book_12Mo[split2]),
+#   rf.class<- predict(rf, newdata=tours.rf[split.valid,], type="response")
+#   fscore.seq[i]<-confusionMatrix(table(rf.class,tours.rf$Book_12Mo[split.valid]),
 #                                  positive = "1")$byClass["F1"]
 # }
 
