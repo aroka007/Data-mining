@@ -1,0 +1,194 @@
+inx <- function (tours, inp.n) { # data: current dataframe; inp.n: position for non-inputs
+  # numeric input indicator
+  indx <- sapply(tours, is.numeric)
+  indx[inp.n]<-FALSE
+  
+  # nominal input indicator
+  index.cat<-sapply(tours, is.factor)
+  index.cat[inp.n]<-FALSE
+  
+  # missing value indicator
+  index.na<-sapply(tours,function(x) any(is.na(x)))
+  index.na[inp.n]<-FALSE
+  
+  data.frame(indx, index.cat, index.na)
+}
+
+impute <- function(x,y) {
+  x[is.na(x)]<-y
+  x
+}
+#Mode
+mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+
+
+
+## Mean function ##
+means <- function(x) { mean(x, na.rm = TRUE) }
+
+tour <- dat_con ## Tour_Days, Grp_Size_ratio, Age State already consolidaed
+
+tours.rf$Tour_Days_Con <- as.factor(tours.rf$Tour_Days_Con)
+tours.rf$Grp_Size_ratio_Con <- as.factor(tours.rf$Grp_Size_ratio_Con)
+tours.rf$Age_Con <- as.factor(tours.rf$Age_Con)
+tours.rf$State_Con <- as.factor(tours.rf$State_Con)
+
+
+tours$Book_12Mo<-as.factor(tours$Book_12Mo)
+tours$Recommend_GAT<-as.factor(tours$Recommend_GAT)
+tours$TravelAgain<-as.factor(tours$TravelAgain)
+tours$Groups_Interest<-as.factor(tours$Groups_Interest)
+tours$Reference<-as.factor(tours$Reference)
+
+tours$Overall_Impression<-factor(tours$Overall_Impression,ordered = T)
+tours$Pre_Departure<-factor(tours$Pre_Departure,ordered = T)
+tours$Flight_Itin<-factor(tours$Flight_Itin,ordered=T)
+tours$TD_Overall<-factor(tours$TD_Overall,ordered = T)
+tours$Extension<-as.factor(tours$Extension)
+tours$Insurance<-as.factor(tours$Insurance)
+tours$FltGty<-as.factor(tours$FltGty)
+tours$Complaint_Event<-as.factor(tours$Complaint_Event)
+tours$Voucher_Event<-as.factor(tours$Voucher_Event)
+
+var.rem<--grep("^(FY|Complaint_Event|TD_Overall|Trip_no|Promo_Disc|Return_Connect_Time_Mins_2|Outbound_Connect_Gateway2|
+               Return_Connect_Time_Mins_1|Return_Connect_Time_Mins_2|Eval_Contact_Days|Outbound_Connect_Time_Mins_2|
+               |Return_Connections|Domestic_Depart_Time|Outbound_Connect_Time_Mins_1|Domestic_Arrival_Time|Intr_Arrival_Time|
+               Intr_Depart_Time|Cus_ID|ProdTour_ID|SalesTourID|Trip_No|HH_ID| Optionals_Avg|Bus_Avg|Meals_Avg|Hotels_Avg|GUSS_Avg|Outbound_Connect_Gateway2
+               |Return_Connect_Gateway2|Start_Day|End_Day|FltGty|Domestic_Depart_Time|Optionals_Avg|Tour_Region|Outbound_Intr_Gateway|Return_Intr_Gateway|
+               Outbound_Connect_Gateway1|Return_Connect_Gateway1)$",names(tours))
+new.tours<-tours[var.rem]
+
+sort(sapply(new.tours, function(x) sum(is.na(x))),decreasing = T)
+
+
+set.seed(27947)
+split = sample.split(new.tours$Book_12Mo, SplitRatio = 0.5)
+split.valid<-!split
+split.test<-!split
+split2<-sample.split(new.tours$Book_12Mo[!split],SplitRatio = 1/2)
+split.valid[split.valid==TRUE]= split2
+split.test[split.test==TRUE]= !split2
+
+
+consldt<-new.tours[split,] %>% 
+  select(TourCode,TourDate,Outbound_Domestic_Gateway,Return_Domestic_Gateway,
+         Book_12Mo)
+library(tree.bins)
+library(rpart)
+binned <- tree.bins(data = consldt, y = Book_12Mo,
+                    bin.nm = "Group.", control = rpart.control(cp = .001),
+                    return = "new.factors") 
+
+new.tours["TourCode_Groups"] <- as.factor(binned[[1]]$Categories[match(new.tours$TourCode,binned[[1]]$TourCode)])
+new.tours["TourDate_Groups"] <- as.factor(binned[[2]]$Categories[match(new.tours$TourDate,binned[[2]]$TourDate)])
+new.tours["Outbound_Domestic_Gateway_Groups"] <- as.factor(binned[[3]]$Categories[match(new.tours$Outbound_Domestic_Gateway,binned[[3]]$Outbound_Domestic_Gateway)])
+new.tours["Return_Domestic_Gateway_Groups"] <- as.factor(binned[[4]]$Categories[match(new.tours$Return_Domestic_Gateway,binned[[4]]$Return_Domestic_Gateway)])
+
+
+
+######################
+##### Imputation #####
+######################
+any(is.na(tours$Age))
+#Update#
+tours.imp1<-new.tours
+tours.imp1[c("Tour_Days","TourCode","TourDate","Grp_Size_Cat","Grp_Size","Capacity","Age","State","Intr_Depart_Time",
+            "Outbound_Domestic_Gateway","Outbound_Connect_Gateway1","Return_Connect_Gateway1","Return_Domestic_Gateway")]=NULL
+
+tours.imp <- tours.imp1
+inp.n <- grep("^(EvalID|Book_12Mo)", names(tours.imp))
+inx3<-inx(tours.imp, inp.n) 
+indx<-inx3$indx
+index.cat<-inx3$index.cat
+index.na<-inx3$index.na
+names(tours.imp)[index.na==TRUE]
+Mean<-sapply(tours.imp[split,indx],means)
+
+tours.imp[indx]<-as.data.frame(mapply(impute,x=tours.imp[indx],y = Mean))
+
+Mode<-sapply(tours.imp[split, index.cat],mode)
+tours.imp[index.cat]<-as.data.frame(mapply(impute,x=tours.imp[index.cat],y = Mode))
+
+sort(sapply(tours.imp, function(x) sum(is.na(x))),decreasing = T)
+
+library(Amelia)
+missmap(tours.imp)
+dev.off()
+
+
+
+# create missing value flag #
+tours.imp[paste(names(tours.imp)[index.na], "NA", sep=".")] <- ifelse(
+  is.na(tours.imp1[index.na]), 1, 0)
+
+tours.imp[grep("NA$",names(tours.imp))]<-lapply(
+  tours.imp[grep("NA$",names(tours.imp))], as.factor) 
+
+
+########################################
+######### Logistic Regression ##########
+########################################
+tours.mdl<-tours.imp
+vars<--grep("^(EvalID|Email.NA|Outbound_Intr_Gateway.NA|Outbound_Connections.NA|Return_Intr_Gateway.NA|SourceType.NA|Outbound_Domestic_Gateway_Groups.NA|TourCode_Groups.NA|Return_Connect_Gateway1_Groups.NA|Return_Domestic_Gateway_Groups.NA)$",names(tours.mdl))
+levels(tours.mdl$Book_12Mo)
+
+full <- glm(Book_12Mo ~., family=binomial, data=tours.mdl[split, vars])
+null<-glm(Book_12Mo ~1, family=binomial, data=tours.mdl[split, vars])
+
+n<-sum(split)
+
+#Stepwise
+reg.step <- step(null, scope=formula(full), direction="both",k=log(n))
+summary(reg.step)
+
+library(pROC)
+library(caret)
+reg.step.prob<-predict(reg.step,tours.mdl[split.valid, vars], type = "response") 
+rocCurve.reg <- roc(tours.mdl[split.valid,]$Book_12Mo, reg.step.prob, quiet = TRUE)
+regThresh <-  coords(rocCurve.reg, x = "best", best.method = "closest.topleft", transpose = FALSE)
+#regThresh
+reg.class <- as.factor(ifelse(reg.step.prob >= regThresh$threshold, 1,0))
+reg.fscore<-confusionMatrix(table(reg.class,new.tours[split.valid,]$Book_12Mo),
+                            positive = "1")$byClass["F1"]
+
+
+
+########################################
+####### Artificial Neural Network ######
+########################################
+
+
+#####################
+## ANN Preparation ##
+#####################
+
+tours.ann<-tours.imp
+
+
+#######################
+#### Random Forest #### internal downsampling
+#######################
+
+tours.rf<-tours.imp
+str(tours.rf)
+vars1<--grep("^(EvalID|Outbound_Intr_Gateway|Return_Intr_Gateway|State)$", names(tours.rf))
+
+minor<-unname(summary(tours.rf$Book_12Mo[split])[2])
+
+#cant handle more than 53 categories!
+library(randomForest)
+set.seed(27947)
+RF <- randomForest(Book_12Mo~., data=tours.rf[split,vars1],ntree = 500,strata= tours.rf$Book_12Mo[split],sampsize=c(minor,minor),importance =TRUE)
+#print(RF)
+plot(RF)  
+
+sort(sapply(tours.rf[split,], function(x) sum(is.na(x))),decreasing = T)
+
+RF.class<- predict(RF, newdata=tours.rf[split.valid,], type="response")
+fscore<-confusionMatrix(table(RF.class,new.tours$Book_12Mo[split.valid]),
+                        positive = "1")$byClass["F1"]  
+fscore
