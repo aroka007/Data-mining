@@ -95,7 +95,7 @@ new.tours["TourDate_Groups"] <- as.factor(binned[[2]]$Categories[match(new.tours
 new.tours["Outbound_Domestic_Gateway_Groups"] <- as.factor(binned[[3]]$Categories[match(new.tours$Outbound_Domestic_Gateway,binned[[3]]$Outbound_Domestic_Gateway)])# ###########################################################################################
 new.tours["Return_Domestic_Gateway_Groups"] <- as.factor(binned[[4]]$Categories[match(new.tours$Return_Domestic_Gateway,binned[[4]]$Return_Domestic_Gateway)])# ###########################################################################################
 
-new.tours$State_Cons<-dat$State_con
+new.tours$State_Cons<-dat$State_con #from rui's state_con....
 
 #new.tours$State<-NULL
 # 
