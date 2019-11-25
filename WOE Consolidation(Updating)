@@ -1,0 +1,92 @@
+#########################  WOE ########################
+###  library(Information)
+dat <- read.csv("D:/Google Drive/Math/Data Mining/Project/modeling_data.csv", 
+                header=TRUE, na.strings=c(".", "NA", "", "?"))
+########## Tour_Days  ###############
+df.TourDays <- dat[, c("Tour_Days", "Book_12Mo")]
+df.TourDays$Tour_Days <- as.factor(df.TourDays$Tour_Days)
+
+IV.TourDays <- create_infotables(data = df.TourDays, y="Book_12Mo")
+IV.TourDays[["Tables"]][["Tour_Days"]] <- IV.TourDays[["Tables"]][["Tour_Days"]][order(IV.TourDays[["Tables"]][["Tour_Days"]]$WOE),]
+plot_infotables(IV.TourDays, "Tour_Days")
+woe.TourDays1 <- IV.TourDays[["Tables"]][["Tour_Days"]]
+
+fctr1 <- c(6,4,17,9,11,15,12)
+fctr2 <- c(16,21,23,13,14,18,7,10,1)
+fctr3 <- c(24,8,19)
+dat$Tour_Days_Con <- dat$Tour_Days
+
+ind1 <- which(dat$Tour_Days_Con %in% fctr1)
+ind2 <- which(dat$Tour_Days_Con %in% fctr2)
+ind3 <- which(dat$Tour_Days_Con %in% fctr3)
+dat$Tour_Days_Con[ind1] <- "fctr1"
+dat$Tour_Days_Con[ind2] <- "fctr2"
+dat$Tour_Days_Con[ind3] <- "fctr3"
+
+
+
+prop <- dat %>% group_by(Tour_Days_Con, Book_12Mo) %>% tally() %>% mutate(pct=n/sum(n))
+ggplot(prop, aes(Tour_Days_Con, pct, fill=Book_12Mo)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = n), vjust = 2) +
+  geom_text(aes(label = scales::percent(pct)), vjust = 4, size=8) +
+  theme(axis.title.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.x = element_text(size = 22, face="bold"))
+
+
+########## size_ratio  ###############
+dat$Grp_Size_ratio <- dat$Grp_Size/dat$Capacity
+
+df.ratio <- dat[,c("Grp_Size_ratio","Book_12Mo")]
+IV.ratio <- create_infotables(data=df.ratio, y="Book_12Mo", bins = 5)
+IV.ratio[["Tables"]][["Grp_Size_ratio"]] <- IV.ratio[["Tables"]][["Grp_Size_ratio"]][order(IV.ratio[["Tables"]][["Grp_Size_ratio"]]$WOE),]
+plot_infotables(IV.ratio, "Grp_Size_ratio")
+
+dat$Grp_Size_ratio_Con <- dat$Grp_Size_ratio 
+ind1 <- which(dat$Grp_Size_ratio<=0.55)
+ind2 <- which(dat$Grp_Size_ratio<=0.73 & dat$Grp_Size_ratio>0.55)
+ind3 <- which(dat$Grp_Size_ratio<=0.89 & dat$Grp_Size_ratio>0.73)
+ind3a <- which(dat$Grp_Size_ratio<=1.26 & dat$Grp_Size_ratio>0.98)
+ind3 <- c(ind3,ind3a)
+ind4 <- which(dat$Grp_Size_ratio<=0.98 & dat$Grp_Size_ratio>0.89)
+
+dat$Grp_Size_ratio_Con[ind1] <- "low"
+dat$Grp_Size_ratio_Con[ind2] <- "med"
+dat$Grp_Size_ratio_Con[ind3] <- "fair"
+dat$Grp_Size_ratio_Con[ind4] <- "poor"
+
+prop <- dat %>% group_by(Grp_Size_ratio_Con, Book_12Mo) %>% tally() %>% mutate(pct=n/sum(n))
+ggplot(prop, aes(Grp_Size_ratio_Con, pct, fill=Book_12Mo)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = n), vjust = 2) +
+  geom_text(aes(label = scales::percent(pct)), vjust = 4, size=8) +
+  theme(axis.title.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.x = element_text(size = 22, face="bold"))
+
+
+########## Age  ###############
+df.Age <- dat[,c("Age","Book_12Mo")]
+IV.Age<- create_infotables(data=df.Age, y="Book_12Mo")
+plot_infotables(IV.Age, "Age")
+
+dat$Age_Con <- as.character(dat$Age) 
+ind1 <- which(dat$Age %in% c("30-39","40-44","45-49"))
+ind2 <- which(dat$Age %in% c("50-54","55-59","60-69","70-79"))
+ind3 <- which(dat$Age %in% c("No Age","Over 80","Under 30"))
+length(ind1)+length(ind2)+length(ind3)
+
+dat$Age_Con[ind1] <- "mid"
+dat$Age_Con[ind2] <- "old"
+dat$Age_Con[ind3] <- "mix"
+
+
+
+########## Age  ###############
+df.State <- dat[,c("State","Book_12Mo")]
+IV.State<- create_infotables(data=df.State, y="Book_12Mo")
+IV.State[["Tables"]][["State"]] <- IV.State[["Tables"]][["State"]][order(IV.State[["Tables"]][["State"]]$WOE),]
+x <-IV.State[["Tables"]][["State"]]
+
+plot_infotables(IV.State, "State")
