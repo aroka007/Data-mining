@@ -246,7 +246,7 @@ regThresh <-  coords(rocCurve.reg, x = "best", best.method = "closest.topleft", 
 reg.class <- as.factor(ifelse(reg.step.prob >= regThresh$threshold, 1,0))
 reg.fscore<-confusionMatrix(table(reg.class,new.tours[split2,vars]$Book_12Mo),
                             positive = "1")$byClass["F1"]
-reg.fscore #bic f score=0.5167822  using aic=0.518996     0.5172805 with state
+reg.fscore #bic f score=0.5042664  
 
 #Backwards
 # reg.bwd <- step(full, direction="backward",k=log(n), trace = FALSE)
