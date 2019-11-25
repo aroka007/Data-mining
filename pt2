@@ -384,18 +384,18 @@ ann.fscore  #
 
 tours.rf<-tours.imp
 str(tours.rf)
-vars1<--grep("^(EvalID|Outbound_Intr_Gateway|Return_Intr_Gateway|State)$", names(tours.rf))
+vars1<--grep("^(EvalID|)$", names(tours.rf))
 
 minor<-unname(summary(tours.rf$Book_12Mo[split])[2])
 
-#cant handle more than 53 categories!
+#can't handle more than 53 categories!
 library(randomForest)
 set.seed(27947)
 RF <- randomForest(Book_12Mo~., data=tours.rf[split,vars1],
-                   ntree = 100, 
+                   ntree = 200, 
                    strata= tours.rf$Book_12Mo[split], 
                    sampsize=c(minor,minor),
-                   importance =TRUE)#from below
+                   importance =TRUE,mtry=m.best)#from below
 #print(RF)
 plot(RF)  
 
@@ -406,45 +406,36 @@ library(caret)
 RF.class<- predict(RF, newdata=tours.rf[split.valid,], type="response")
 fscore<-confusionMatrix(table(RF.class,tours.rf[split.valid,]$Book_12Mo),
                         positive = "1")$byClass["F1"]  
-fscore #0.5262805  
+fscore #0.5293922 
+
+ 
+
 # RF$importance
 # varImpPlot(RF) 
 
 # #### Parameter Tuning: mtry ####
-# m<-round(seq(2,59,length.out =3))
-# fscore.seq<-numeric()
+#m<-round(seq(2,58,length.out =8))
+# m<-(seq(10,20))
+#  fscore.seq<-numeric()
 # 
-# for(i in 1:length(m)){
-#   set.seed(27947)
-#   rf <- randomForest(Book_12Mo~., data=tours.rf[split,vars1],
-#                      ntree = 300,
-#                      strata= tours.rf$Book_12Mo[split],
-#                      sampsize=c(minor,minor),
-#                      importance =TRUE,
-#                      mtry=m.best)
+#  for(i in 1:length(m)){
+#    set.seed(27947)
+#    rf <- randomForest(Book_12Mo~., data=tours.rf[split,vars1],
+#                       ntree = 200,
+#                       strata= tours.rf$Book_12Mo[split],
+#                       sampsize=c(minor,minor),
+#                       importance =TRUE,
+#                       mtry=m[i])
 # 
 #   rf.class<- predict(rf, newdata=tours.rf[split.valid,], type="response")
 #   fscore.seq[i]<-confusionMatrix(table(rf.class,tours.rf$Book_12Mo[split.valid]),
 #                                  positive = "1")$byClass["F1"]
 # }
-
+# 
 # plot(m, fscore.seq, pch=19 , col="blue", type="b",
-#      ylab="F-score",xlab="Number of Predictors considered at each split")
-# 
-# 
+#       ylab="F-score",xlab="Number of Predictors considered at each split")
+# #
+# #
 # m.best<- m[which.max(fscore.seq)]
 # max(fscore.seq)
-# # 
-
-
-
-
-
-
-
-
-
-
-
-
-
+# #
