@@ -113,8 +113,8 @@ cp.seq=Dtree$cptable[,1]
 fscore<-numeric()
 fscore[1]<-0  # Set root node F-score zero
 for (i in 2:length(cp.seq)) {
-  tree.prob = predict(prune(Dtree, cp=cp.seq[i]), new.tours[split2,var1],type="prob")[,2] 
-  rocCurve.tree <- roc(new.tours[split2,]$Book_12Mo, tree.prob, quiet=TRUE)
+  tree.prob = predict(prune(Dtree, cp=cp.seq[i]), new.tours[split.valid,var1],type="prob")[,2] 
+  rocCurve.tree <- roc(new.tours[split.valid,]$Book_12Mo, tree.prob, quiet=TRUE)
   treeThresh <-  coords(rocCurve.tree, x = "best", best.method = "closest.topleft", transpose = FALSE)
   tree.class <- as.factor(ifelse(tree.prob >= treeThresh$threshold, 1,0))
   fscore[i]<-confusionMatrix(table(tree.class,new.tours[split2,var1]$Book_12Mo),
@@ -131,13 +131,13 @@ library(partykit)
 # tree.final$variable.importance
 
 ## Model Evaluation: Lift Graph ##
-test.prob<-predict(tree.final, new.tours[!split2,var1], type = "prob")[,2]
-evaluate.prob <- predict(tree.final, new.tours[split2,var1], type = "prob")[,2]
+test.prob<-predict(tree.final, new.tours[split.test,var1], type = "prob")[,2]
+evaluate.prob <- predict(tree.final, new.tours[split.valid,var1], type = "prob")[,2]
 train.prob <- predict(tree.final, new.tours[split,var1], type = "prob")[,2]
 
 library(ROCR)
-pred.test<-prediction(test.prob, new.tours[!split2,var1]$Book_12Mo)
-pred.eva <- prediction(evaluate.prob, new.tours[split2,var1]$Book_12Mo)
+pred.test<-prediction(test.prob, new.tours[split.test,var1]$Book_12Mo)
+pred.eva <- prediction(evaluate.prob, new.tours[split.valid,var1]$Book_12Mo)
 pred<-prediction(train.prob, new.tours[split,var1]$Book_12Mo)
 
 perf.test<-performance(pred.test,"lift","rpp")
@@ -239,20 +239,20 @@ n<-sum(split)
 reg.step <- step(null, scope=formula(full), direction="both",k=log(n))
 summary(reg.step)
 # Validation F-score
-reg.step.prob<-predict(reg.step,tours.mdl[split2, vars], type = "response") 
-rocCurve.reg <- roc(tours.mdl[split2,]$Book_12Mo, reg.step.prob, quiet = TRUE)
+reg.step.prob<-predict(reg.step,tours.mdl[split.valid, vars], type = "response") 
+rocCurve.reg <- roc(tours.mdl[split.valid,]$Book_12Mo, reg.step.prob, quiet = TRUE)
 regThresh <-  coords(rocCurve.reg, x = "best", best.method = "closest.topleft", transpose = FALSE)
 #regThresh
 reg.class <- as.factor(ifelse(reg.step.prob >= regThresh$threshold, 1,0))
-reg.fscore<-confusionMatrix(table(reg.class,new.tours[split2,vars]$Book_12Mo),
+reg.fscore<-confusionMatrix(table(reg.class,new.tours[split.valid,vars]$Book_12Mo),
                             positive = "1")$byClass["F1"]
 reg.fscore #bic f score=0.5042664  
 
 #Backwards
 # reg.bwd <- step(full, direction="backward",k=log(n), trace = FALSE)
 # # Validation F-score
-# reg.bwd.prob<-predict(reg.bwd,tours.mdl[split2, vars], type = "response") 
-# rocCurve.reg <- roc(tours.mdl[split2,]$Book_12Mo, reg.bwd.prob, quiet = TRUE)
+# reg.bwd.prob<-predict(reg.bwd,tours.mdl[split.valid, vars], type = "response") 
+# rocCurve.reg <- roc(tours.mdl[split.valid,]$Book_12Mo, reg.bwd.prob, quiet = TRUE)
 # regThresh <-  coords(rocCurve.reg, x = "best", best.method = "closest.topleft", transpose = FALSE)
 # #regThresh
 # reg.class <- as.factor(ifelse(reg.bwd.prob >= regThresh$threshold, 1,0))
@@ -263,12 +263,12 @@ reg.fscore #bic f score=0.5042664
 # #Forward
 # reg.fwd <- step(null, scope=formula(full), direction="forward",trace=FALSE,k=log(n))
 # # Validation F-score
-# reg.fwd.prob<-predict(reg.fwd,tours.mdl[split2, vars], type = "response") 
-# rocCurve.reg <- roc(tours.mdl[split2,]$Book_12Mo, reg.fwd.prob, quiet = TRUE)
+# reg.fwd.prob<-predict(reg.fwd,tours.mdl[split.valid, vars], type = "response") 
+# rocCurve.reg <- roc(tours.mdl[split.valid,]$Book_12Mo, reg.fwd.prob, quiet = TRUE)
 # regThresh <-  coords(rocCurve.reg, x = "best", best.method = "closest.topleft", transpose = FALSE)
 # #regThresh
 # reg.class <- as.factor(ifelse(reg.fwd.prob >= regThresh$threshold, 1,0))
-# reg.fscore<-confusionMatrix(table(reg.class,new.tours[split2,vars]$Book_12Mo),
+# reg.fscore<-confusionMatrix(table(reg.class,new.tours[split.valid,vars]$Book_12Mo),
 #                             positive = "1")$byClass["F1"]
 # reg.fscore   #f score usingbic= 0.516782    
 
@@ -305,8 +305,8 @@ inp.n <- grep("^(Book_12Mo)", names(tours.ann.encode))
 
 x.train <- as.matrix(tours.ann.encode[split,-inp.n])
 y.train<- as.matrix(tours.ann.encode[split,"Book_12Mo"])
-x.valid<-as.matrix(tours.ann.encode[split2,-inp.n])
-y.valid<-as.matrix(tours.ann.encode[split2,"Book_12Mo"])
+x.valid<-as.matrix(tours.ann.encode[split.valid,-inp.n])
+y.valid<-as.matrix(tours.ann.encode[split.valid,"Book_12Mo"])
 
 
 
@@ -365,15 +365,15 @@ ann.select <-load_model_hdf5("my_ann_raw.h5")
 ann.prob<-predict_proba(ann.select,x.valid)
 
 # Use alternative cutoff
-rocCurve.ann <- roc(tours.ann[split2,]$Book_12Mo, ann.prob, quiet=TRUE)
+rocCurve.ann <- roc(tours.ann[split.valid,]$Book_12Mo, ann.prob, quiet=TRUE)
 annThresh <-  coords(rocCurve.ann, x = "best", best.method = "closest.topleft", transpose = FALSE)
 ann.class <- as.factor(ifelse(ann.prob >= annThresh$threshold, 1,0))
-ann.fscore<-confusionMatrix(table(ann.class,tours.ann[split2,vars]$Book_12Mo),
+ann.fscore<-confusionMatrix(table(ann.class,tours.ann[split.valid,vars]$Book_12Mo),
                             positive = "1")$byClass["F1"]
 
-ann.fscore  # f-score=0.0.5190652
+ann.fscore  # 
 
-# confusionMatrix(table(ann.class,tours.ann[split2,vars]$Book_12Mo),
+# confusionMatrix(table(ann.class,tours.ann[split.valid,vars]$Book_12Mo),
 #                 positive = "1", mode= "everything")
 # 
 
