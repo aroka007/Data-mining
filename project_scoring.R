@@ -1,7 +1,3 @@
-#### Project Scoring ####
-#### Matt'ss attempt ####
-#### November 25 2019####
-
 ##### Scoring ######
 load("project_RF.RData")
 
@@ -21,10 +17,15 @@ inx <- function (tours, inp.n) { # data: current dataframe; inp.n: position for 
   data.frame(indx, index.cat, index.na)
 }
 
+impute <- function(x,y) {
+  x[is.na(x)]<-y
+  x
+}
+
 scoring<- function(tours, Mean, Mode, RF) {
   raw<-tours
   
-    #library(tidyverse) #UNCOMMENT
+  library(tidyverse) #UNCOMMENT
   
   #str(tours)
   #tours$Book_12Mo<-as.factor(tours$Book_12Mo)
@@ -66,28 +67,28 @@ scoring<- function(tours, Mean, Mode, RF) {
   #consolidate using training data
   
   #UNCOMMENT THE FOLLOWING
-  
-    # consldt<-new.tours %>% 
+
+    # consldt<-new.tours %>%
     #   select(TourCode,TourDate,Outbound_Domestic_Gateway,Return_Domestic_Gateway,
     #          Book_12Mo)
     # library(tree.bins)
     # binned <- tree.bins(data = consldt, y = Book_12Mo,
     #                     bin.nm = "Group.", control = rpart.control(cp = .001),
-    #                     return = "new.factors") 
-  
-  
-  
-    ####################################
-    ######### CHECK############
-    ####################################
-  
-    #Add consolidated categories for training data to new.tours df
-    # new.tours["TourCode_Groups"] <- as.factor(binned[[1]]$Categories[match(new.tours$TourCode,binned[[1]]$TourCode)])
-    # new.tours["TourDate_Groups"] <- as.factor(binned[[2]]$Categories[match(new.tours$TourDate,binned[[2]]$TourDate)])# ###########################################################################################
-    # new.tours["Outbound_Domestic_Gateway_Groups"] <- as.factor(binned[[3]]$Categories[match(new.tours$Outbound_Domestic_Gateway,binned[[3]]$Outbound_Domestic_Gateway)])# ###########################################################################################
-    # new.tours["Return_Domestic_Gateway_Groups"] <- as.factor(binned[[4]]$Categories[match(new.tours$Return_Domestic_Gateway,binned[[4]]$Return_Domestic_Gateway)])# ###########################################################################################
-  
-    #new.tours$State_Cons<-dat$State_con
+    #                     return = "new.factors")
+
+
+
+  ####################################
+  ######### CHECK############
+  ####################################
+
+  #Add consolidated categories for training data to new.tours df
+  # new.tours["TourCode_Groups"] <- as.factor(binned[[1]]$Categories[match(new.tours$TourCode,binned[[1]]$TourCode)])
+  # new.tours["TourDate_Groups"] <- as.factor(binned[[2]]$Categories[match(new.tours$TourDate,binned[[2]]$TourDate)])# ###########################################################################################
+  # new.tours["Outbound_Domestic_Gateway_Groups"] <- as.factor(binned[[3]]$Categories[match(new.tours$Outbound_Domestic_Gateway,binned[[3]]$Outbound_Domestic_Gateway)])# ###########################################################################################
+  # new.tours["Return_Domestic_Gateway_Groups"] <- as.factor(binned[[4]]$Categories[match(new.tours$Return_Domestic_Gateway,binned[[4]]$Return_Domestic_Gateway)])# ###########################################################################################
+  # 
+  #new.tours$State_Cons<-dat$State_con
   #new.tours$State<-NULL
   
   #str(new.tours[,var1])
@@ -132,7 +133,7 @@ scoring<- function(tours, Mean, Mode, RF) {
   #1 numeric missing-outbound connections other factors
   
   ######## Routine: Update Input Info ########
-  inp.n <- grep("^(EvalID|Books_12Mo)", names(tours.xf))
+  inp.n <- grep("^(EvalID)", names(tours.xf))
   inx3<-inx(tours.imp, inp.n) 
   indx<-inx3$indx
   index.cat<-inx3$index.cat
