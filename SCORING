@@ -157,10 +157,15 @@ tours.rf$SourceType<-factor(tours.rf$SourceType,levels = c(levels(tours.rf$Sourc
 
 library(caret)
 RF.class<- predict(RF, newdata=tours.rf, type="response")
-RF.class[is.na(RF.class)]<-"1"
+#RF.class[is.na(RF.class)]<-"1"
 summary(RF.class)
 
-raw["pred.class"]<-data.frame(RF.class) #***** *
+raw["Score_pred.class"]<-as.data.frame(RF.class) #***** *
+                                      
+score<-raw %>% select(EvalID,Score_pred.class)
+
+write.csv(score,"ScoredP2.csv",row.names = F)
+ #***** *
                                       
 
 # tours.score.pred<-scoring(tours.score, RF, Mean, Mode, binned)
