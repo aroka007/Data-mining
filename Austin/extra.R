@@ -1,4 +1,4 @@
-
+library(chron)
 library(ggplot2)
 
 ggplot(tours, aes(x=Tour_Days, fill=Book_12Mo))+
