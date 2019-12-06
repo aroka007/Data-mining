@@ -5,26 +5,6 @@ model <- read.csv("D:/Google Drive/Math/Data Mining/Project/modeling_data.csv",
 score <- read.csv("D:/Google Drive/Math/Data Mining/Project/scoring_data.csv", 
                   header=TRUE, na.strings=c(".", "NA", "", "?"))
 
-
-##################  Load Function  ############
-
-inx <- function (data, inp.n) { # data: current dataframe; inp.n: position for non-inputs
-  # numeric input indicator
-  indx <- sapply(data, is.numeric)
-  indx[inp.n]<-FALSE
-  
-  # nominal input indicator
-  index.cat<-sapply(data, is.factor)
-  index.cat[inp.n]<-FALSE
-  
-  # missing value indicator
-  index.na<-sapply(data,function(x) any(is.na(x)))
-  index.na[inp.n]<-FALSE
-  
-  data.frame(indx, index.cat, index.na)
-}
-
-
 ########################################################################################
 ########################################################################################
 
