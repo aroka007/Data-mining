@@ -57,3 +57,15 @@ xxx1 <-match(diff_date, model_date)
 
 ### Hahaha, guess what, There are 416 different dates, and all of them are from model date. So, we need to 
 ### So, we need to redo consolidation for this variable. I think just use month/year should be fine.
+model$TourDate <- as.Date(model$TourDate, "%m/%d/%Y")
+model$TourDate <- format(model$TourDate, "%m/%Y")
+
+score$TourDate <- as.Date(score$TourDate, "%m/%d/%Y")
+score$TourDate <- format(score$TourDate, "%m/%Y")
+
+### OK, let's check "TourDate" now
+score_date <- unique(score[,temp])
+model_date <- unique(model[,temp])
+setdiff(model_date, score_date)
+
+### OK, nice, there is no difference now
