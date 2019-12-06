@@ -108,3 +108,20 @@ levels(score[,64])
 ## in the scoring dataset, "SourceType"(64) variable misses level "Outside Sal"
 xxx1 <- score[, 64]
 levels(score$SourceType) <- c(levels(score$SourceType), "Outside Sal")   # Add level "outside Sal" into scoring dataset
+
+
+##############################################
+### Fix "Outbound_Domestic_Gateway" levels ###
+##############################################
+diff1[[23]]
+indice[23]
+##  75
+## "ABE" "ABI" "AEX" "BMI" "BZN" "C"   "CHO" "CLD" "ERI" "EWN" "HRL" "MHT" "MKG" "PAR" "PIR" "SBN" "SJT" "STC"
+## "SWF" "TUP" "YLW" "YUL" "YWG" "YXE"
+## Above levels missing in the scoring dataset
+
+length(levels(score[,75]))
+levels(score[,75]) <- c(levels(score[,75]), diff1[[23]])   
+length(levels(score[,75]))
+
+
