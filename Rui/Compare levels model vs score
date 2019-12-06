@@ -85,15 +85,26 @@ diff_state <- diff[[18]]
 model_state <- levels(model$State)
 score_state <- levels(score$State)
 addScore <- setdiff(model_state, score_state)
-addModel <- setdiff(score_state, model_state)
 addScore
 # "GR" "QL" "SE" "SF" "SW" "XS", add these 6 states into scoring dataset
-addModel
-# "AP" "IT" "VC", add these 3 states into model dataset
 
-levels(model$State) <- c(levels(model$State), addModel)   # Add 3 levels into modeling dataset
 levels(score$State) <- c(levels(score$State), addScore)   # Add 6 levels into scoring dataset
-levels(model$State)
 levels(score$State)
-length(levels(model$State))
 length(levels(score$State))
+
+###############################
+### Fix "SourceType" levels ###
+###############################
+
+temp <- indice[19]
+levels(model[,64])
+levels(score[,64])
+## "Advertising" "Catalog BRC" "Direct Mail" "Internet"    "Old Src IDs" "Organic Web" "Other"  "Outside Sal"
+## "Referral"    "SJMC"        "Web Booking"
+
+##  "Advertising" "Catalog BRC" "Direct Mail" "Internet"    "Old Src IDs" "Organic Web" "Other"       "Referral"   
+## "SJMC"        "Web Booking"
+
+## in the scoring dataset, "SourceType"(64) variable misses level "Outside Sal"
+xxx1 <- score[, 64]
+levels(score$SourceType) <- c(levels(score$SourceType), "Outside Sal")   # Add level "outside Sal" into scoring dataset
