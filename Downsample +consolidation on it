@@ -124,7 +124,7 @@ data.down$Age_Con[ind3] <- "mix"
 
 data.down$Age_Con<-as.factor(data.down$Age_Con)
 
-######
+######Consolidation using Decision_Tree####
 
 data.down$Book_12Mo<-as.factor(data.down$Book_12Mo)
 #consolidate using training data
@@ -138,7 +138,7 @@ binned <- tree.bins(data = consldt, y = Book_12Mo,
                     return = "new.factors") 
 
 ############################
-######### ############
+####combine bins to data #######
 ###########################
 
 #Add consolidated categories for training data to new.tours df
