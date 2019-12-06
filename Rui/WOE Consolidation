@@ -89,7 +89,7 @@ dat$Age_Con[ind3] <- "mix"
 
 
 ########## State  ###############
-df.State <- dat[,c("State","Book_12Mo")]
+df.State <- dat[split,c("State","Book_12Mo")]
 IV.State<- create_infotables(data=df.State, y="Book_12Mo")
 IV.State[["Tables"]][["State"]] <- IV.State[["Tables"]][["State"]][order(IV.State[["Tables"]][["State"]]$WOE),]
 x <-IV.State[["Tables"]][["State"]]
@@ -110,6 +110,8 @@ ind2 <- which(dat$State %in% fair)
 ind3 <- which(dat$State %in% med)
 ind4 <- which(dat$State %in% good)
 length(ind1)+length(ind2)+length(ind3)+length(ind4)
+
+dat$State_Con <- as.character(dat$State_Con)
 
 dat$State_Con[ind1] <- "poor"
 dat$State_Con[ind2] <- "fair"
