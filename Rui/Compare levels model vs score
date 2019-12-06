@@ -72,3 +72,26 @@ model_date <- unique(model[,temp])
 setdiff(model_date, score_date)
 
 ### OK, nice, there is no difference now
+
+
+##########################
+### Fix "State" levels ###
+##########################
+
+diff_state <- diff[[18]]
+
+model_state <- levels(model$State)
+score_state <- levels(score$State)
+addScore <- setdiff(model_state, score_state)
+addModel <- setdiff(score_state, model_state)
+addScore
+# "GR" "QL" "SE" "SF" "SW" "XS", add these 6 states into scoring dataset
+addModel
+# "AP" "IT" "VC", add these 3 states into model dataset
+
+levels(model$State) <- c(levels(model$State), addModel)   # Add 3 levels into modeling dataset
+levels(score$State) <- c(levels(score$State), addScore)   # Add 6 levels into scoring dataset
+levels(model$State)
+levels(score$State)
+length(levels(model$State))
+length(levels(score$State))
