@@ -124,4 +124,55 @@ length(levels(score[,75]))
 levels(score[,75]) <- c(levels(score[,75]), diff1[[23]])   
 length(levels(score[,75]))
 
+##############################################
+############  Fix Time levels  ###############
+##############################################
+## 76, 82, 85, 91
+ind <- c(76,82,85,91)
+
+model[,76] <- times(model[,76])
+model[,82] <- times(model[,82])
+model[,85] <- times(model[,85])
+model[,91] <- times(model[,91])
+
+model[ ,76] <- hours(model[ ,76])
+model[ ,82] <- hours(model[ ,82])
+model[ ,85] <- hours(model[ ,85])
+model[ ,91] <- hours(model[ ,91])
+
+
+score[,76] <- times(score[,76])
+score[,82] <- times(score[,82])
+score[,85] <- times(score[,85])
+score[,91] <- times(score[,91])
+
+score[ ,76] <- hours(score[ ,76])
+score[ ,82] <- hours(score[ ,82])
+score[ ,85] <- hours(score[ ,85])
+score[ ,91] <- hours(score[ ,91])
+  
+for (i in seq(1:4)){
+  temp <- ind[i]
+  model[ ,temp] <- as.factor(model[ ,temp])
+  score[ ,temp] <- as.factor(score[ ,temp])
+}
+
+diff3 <- vector(mode = "list", length = length(ind))   # create an empty list
+diff4 <- vector(mode = "list", length = length(ind))   # create an empty list
+for (i in seq(1:4)){
+  temp <- ind[i]
+  level1 <- levels(model[,temp])
+  level2 <- levels(score[,temp])
+  diff3[[i]] <- setdiff(level1, level2)    ## setdiff(x,y) are are those elements in x but not in y
+  diff4[[i]] <- setdiff(level2, level1)
+}
+
+## Shows we need to add level "2" into scoring dataset for variable 76 and 91.
+levels(score[ ,76])
+levels(model[ ,76])
+levels(score[,76]) <- c(levels(score[,76]), "2")   
+
+levels(score[ ,91])
+levels(model[ ,91])
+levels(score[,91]) <- c(levels(score[,91]), "2") 
 
