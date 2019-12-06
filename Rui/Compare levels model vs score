@@ -39,13 +39,16 @@ inputs$score <- names(score)
 indx <- sapply(data, is.factor) 
 indice <- which(indx==TRUE)
 indice <- unname(indice)
-diff <- vector(mode = "list", length = length(indice))   # create an empty list
+diff1 <- vector(mode = "list", length = length(indice))   # create an empty list
+diff2 <- vector(mode = "list", length = length(indice))   # create an empty list
 for (i in seq(1:34)){
   temp <- indice[i]
   level1 <- levels(model[,temp])
   level2 <- levels(score[,temp])
-  diff[[i]] <- setdiff(level1, level2)
+  diff1[[i]] <- setdiff(level1, level2)    ## setdiff(x,y) are are those elements in x but not in y
+  diff2[[i]] <- setdiff(level2, level1)
 }
+
 
 
 temp <- indice[13]
