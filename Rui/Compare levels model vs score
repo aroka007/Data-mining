@@ -1,9 +1,30 @@
 ##################  Load Data ##################
+
 model <- read.csv("D:/Google Drive/Math/Data Mining/Project/modeling_data.csv", 
                   header=TRUE, na.strings=c(".", "NA", "", "?"))
 
 score <- read.csv("D:/Google Drive/Math/Data Mining/Project/scoring_data.csv", 
                   header=TRUE, na.strings=c(".", "NA", "", "?"))
+
+
+##################  Load Function  ############
+
+inx <- function (data, inp.n) { # data: current dataframe; inp.n: position for non-inputs
+  # numeric input indicator
+  indx <- sapply(data, is.numeric)
+  indx[inp.n]<-FALSE
+  
+  # nominal input indicator
+  index.cat<-sapply(data, is.factor)
+  index.cat[inp.n]<-FALSE
+  
+  # missing value indicator
+  index.na<-sapply(data,function(x) any(is.na(x)))
+  index.na[inp.n]<-FALSE
+  
+  data.frame(indx, index.cat, index.na)
+}
+
 
 ########################################################################################
 ########################################################################################
@@ -27,4 +48,12 @@ for (i in seq(1:34)){
 }
 
 
-### OMG there are so many inputs have diff levels!!!
+temp <- indice[13]
+diff_date <- diff[[13]]
+score_date <- as.character(unique(score[,temp]))
+model_date <- as.character(unique(model[,temp]))
+xxx <-which(diff_date %in% score_date) 
+xxx1 <-match(diff_date, model_date) 
+
+### Hahaha, guess what, There are 416 different dates, and all of them are from model date. So, we need to 
+### So, we need to redo consolidation for this variable. I think just use month/year should be fine.
