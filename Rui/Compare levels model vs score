@@ -49,8 +49,6 @@ for (i in seq(1:34)){
   diff2[[i]] <- setdiff(level2, level1)
 }
 
-
-
 temp <- indice[13]
 diff_date <- diff[[13]]
 score_date <- as.character(unique(score[,temp]))
@@ -60,6 +58,10 @@ xxx1 <-match(diff_date, model_date)
 
 ### Hahaha, guess what, There are 416 different dates, and all of them are from model date. So, we need to 
 ### So, we need to redo consolidation for this variable. I think just use month/year should be fine.
+
+##########################
+### Fix "TourDate" levels ###
+##########################
 model$TourDate <- as.Date(model$TourDate, "%m/%d/%Y")
 model$TourDate <- format(model$TourDate, "%m/%Y")
 
