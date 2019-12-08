@@ -130,27 +130,18 @@ length(levels(score[,75]))
 ## 76, 82, 85, 91
 ind <- c(76,82,85,91)
 
-model[,76] <- times(model[,76])
-model[,82] <- times(model[,82])
-model[,85] <- times(model[,85])
-model[,91] <- times(model[,91])
+## convert to time 
+for (i in seq(1:4)){
+  temp <- ind[i]
+  model[,temp] <- times(model[,temp])
+}
 
-model[ ,76] <- hours(model[ ,76])
-model[ ,82] <- hours(model[ ,82])
-model[ ,85] <- hours(model[ ,85])
-model[ ,91] <- hours(model[ ,91])
+## only keep hour
+for (i in seq(1:4)){
+  temp <- ind[i]
+  score[,temp] <- hours(score[,temp])
+}
 
-
-score[,76] <- times(score[,76])
-score[,82] <- times(score[,82])
-score[,85] <- times(score[,85])
-score[,91] <- times(score[,91])
-
-score[ ,76] <- hours(score[ ,76])
-score[ ,82] <- hours(score[ ,82])
-score[ ,85] <- hours(score[ ,85])
-score[ ,91] <- hours(score[ ,91])
-  
 for (i in seq(1:4)){
   temp <- ind[i]
   model[ ,temp] <- as.factor(model[ ,temp])
