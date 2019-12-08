@@ -36,7 +36,7 @@ inputs <- inputs[-93,]
 inputs$score <- names(score)
 
 ## The following variables we want them to be factor variables
-indx <- sapply(data, is.factor) 
+indx <- sapply(model, is.factor) 
 indice <- which(indx==TRUE)
 indice <- unname(indice)
 diff1 <- vector(mode = "list", length = length(indice))   # create an empty list
