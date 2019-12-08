@@ -1,0 +1,265 @@
+###################
+####Functions######
+###################
+# library(tidyverse)
+inx <- function (tours, inp.n) { # data: current dataframe; inp.n: position for non-inputs
+  # numeric input indicator
+  indx <- sapply(tours, is.numeric)
+  indx[inp.n]<-FALSE
+  
+  # nominal input indicator
+  index.cat<-sapply(tours, is.factor)
+  index.cat[inp.n]<-FALSE
+  
+  # missing value indicator
+  index.na<-sapply(tours,function(x) any(is.na(x)))
+  index.na[inp.n]<-FALSE
+  
+  data.frame(indx, index.cat, index.na)
+}
+
+impute <- function(x,y) {
+  x[is.na(x)]<-y
+  x
+}
+
+## Mode function ##
+mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+## Mean function ##
+means <- function(x) { mean(x, na.rm = TRUE) }
+
+####################
+##  load "dat_con.Rdata"
+tours <- dat_con
+
+tours$Recommend_GAT<-as.factor(tours$Recommend_GAT)
+tours$TravelAgain<-as.factor(tours$TravelAgain)
+tours$Groups_Interest<-as.factor(tours$Groups_Interest)
+tours$Reference<-as.factor(tours$Reference)
+
+tours$Overall_Impression<-factor(tours$Overall_Impression,ordered = T)
+tours$Pre_Departure<-factor(tours$Pre_Departure,ordered = T)
+tours$Flight_Itin<-factor(tours$Flight_Itin,ordered=T)
+tours$TD_Overall<-factor(tours$TD_Overall,ordered = T)
+
+tours$Extension<-as.factor(tours$Extension)
+tours$Insurance<-as.factor(tours$Insurance)
+tours$FltGty<-as.factor(tours$FltGty)
+tours$Complaint_Event<-as.factor(tours$Complaint_Event)
+tours$Voucher_Event<-as.factor(tours$Voucher_Event)
+
+
+tours$Outbound_Connections <- as.factor(tours$Outbound_Connections)
+tours$Return_Connections <- as.factor(tours$Return_Connections)
+
+##########################
+### Fix "Date" levels ###
+##########################
+tours$TourDate <- as.Date(tours$TourDate, "%m/%d/%Y")
+tours$TourDate <- format(tours$TourDate, "%m/%Y")
+tours$TourDate <- as.factor(tours$TourDate)
+
+##########################
+###  Fix "Time" levels ###
+##########################
+# library(chron)
+ind <- c(76,82,85,91)
+colnames(tours)[ind]  # check the names
+
+## convert to time 
+for (i in seq(1:4)){
+  temp <- ind[i]
+  tours[,temp] <- times(tours[,temp])
+}
+
+## only keep hour
+for (i in seq(1:4)){
+  temp <- ind[i]
+  tours[,temp] <- hours(tours[,temp])
+}
+
+## convert to factor var
+for (i in seq(1:4)){
+  temp <- ind[i]
+  tours[ ,temp] <- as.factor(tours[ ,temp])
+}
+
+tours$Grp_Size_ratio_Con <- as.factor(tours$Grp_Size_ratio_Con)
+tours$Age_Con <- as.factor(tours$Age_Con)
+tours$State_Con <- as.factor(tours$State_Con)
+
+#-1 is missing here so assign na
+tours$Outbound_Connections[tours$Outbound_Connections %in% c(-3,-2,-1,4,5)]<-NA
+tours$Return_Connections[tours$Return_Connections %in% c(-3,-2,-1,4,5)]<-NA
+
+sort(sapply(tours, function(x) sum(is.na(x))),decreasing = T)
+
+# library(rpart)
+# library(caret)
+# library(caTools)
+set.seed(27947)
+split = sample.split(tours$Book_12Mo, SplitRatio = 0.5)
+split.valid<-!split
+split.test<-!split
+split2<-sample.split(tours$Book_12Mo[!split],SplitRatio = 1/2)
+split.valid[split.valid==TRUE]= split2
+split.test[split.test==TRUE]= !split2
+
+
+######################
+##tree consolidation##
+#####################
+# library(tree.bins)
+
+
+consldt<-tours[split,] %>% 
+  select(TourCode,Outbound_Domestic_Gateway,Return_Domestic_Gateway,
+         Book_12Mo)
+
+binned <- tree.bins(data = consldt, y = Book_12Mo,
+                    bin.nm = "Group.", control = rpart.control(cp = .001),
+                    return = "new.factors")
+
+#Add consolidated categories for training data to new.tours df
+tours["TourCode_Groups"] <- as.factor(binned[[1]]$Categories[match(tours$TourCode,binned[[1]]$TourCode)])
+tours["Outbound_Domestic_Gateway_Groups"] <- as.factor(binned[[2]]$Categories[match(tours$Outbound_Domestic_Gateway,binned[[2]]$Outbound_Domestic_Gateway)])
+tours["Return_Domestic_Gateway_Groups"] <- as.factor(binned[[3]]$Categories[match(tours$Return_Domestic_Gateway,binned[[3]]$Return_Domestic_Gateway)])
+
+### Create a name list  ###
+var_names <- as.data.frame(seq(from=1, to=ncol(tours)), col.names="index")
+colnames(var_names)[1] <-"index"
+var_names$names <- names(tours)
+
+###  the following variables will be removed  ###
+rem <- c(2:7, 10:12, 14:16, 18, 58, 63, 67, 72, 73:75,77,79,81, 84,86,88,90,95)
+var_names$names[rem]
+## 1] "Cus_ID"                    "FY"                        "ProdTour_ID"               "SalesTourID"              
+## [5] "Trip_no"                   "Tour_Season"               "Tour_Days"                 "Start_Day"                
+## [9] "End_Day"                   "Grp_Size_Cat"              "Grp_Size"                  "Capacity"                 
+## [13] "TourCode"                  "HH_ID"                     "State"                     "Promo_Disc"               
+## [17] "Complaint_Event"           "Eval_Contact_Days"         "Voucher_Event"             "Outbound_Domestic_Gateway"
+## [21] "Outbound_Connect_Gateway1" "Outbound_Connect_Gateway2" "Outbound_Intr_Gateway"     "Return_Intr_Gateway"      
+## [25] "Return_Connect_Gateway1"   "Return_Connect_Gateway2"  "Return_Domestic_Gateway"  
+
+tours$Book_12Mo <- as.factor(tours$Book_12Mo)
+tours$Tour_Days_Con <- as.factor(tours$Tour_Days_Con)
+new.tours<-tours[,-rem]
+
+
+
+######################
+##### Imputation #####
+######################
+tours.imp <- new.tours
+#Routine Update#
+inp.n <- grep("^(EvalID|Book_12Mo)$",names(tours.imp))
+inx3<-inx(tours.imp, inp.n) 
+indx<-inx3$indx
+index.cat<-inx3$index.cat
+index.na<-inx3$index.na
+#####################
+
+names(tours.imp)[index.na==T]
+summary(tours.imp[index.na])
+
+
+# numeric impute: By mean #
+Mean<-sapply(tours.imp[split,indx],means)##remove in scoring already saved!!
+tours.imp[indx]<-as.data.frame(mapply(impute,x=tours.imp[indx],y = Mean))
+
+# Nominal Input: By Mode #
+Mode<-sapply(tours.imp[split, index.cat],mode)
+tours.imp[index.cat]<-as.data.frame(mapply(impute,x=tours.imp[index.cat],y = Mode))
+
+sort(sapply(tours.imp, function(x) sum(is.na(x))),decreasing = T)
+
+# library(Amelia)
+# missmap(tours.imp)
+# dev.off()
+
+
+# create missing value flag #
+tours.imp[paste(names(tours.imp)[index.na], "NA", sep=".")] <- ifelse(
+  is.na(tours.imp[index.na]), 1, 0)
+
+tours.imp[grep("NA$",names(tours.imp))]<-lapply(
+  tours.imp[grep("NA$",names(tours.imp))], as.factor) 
+
+#######################
+#### Random Forest #### internal downsampling
+#######################
+
+tours.rf<-tours.imp
+str(tours.rf)
+vars1 <- -grep("^(EvalID|State)$",names(tours.rf))
+
+
+minor<-unname(summary(tours.rf$Book_12Mo[split])[2])
+
+
+# library(randomForest)
+set.seed(27947)
+
+m.best<-12
+
+################################
+#### Parameter Tuning: mtry ####
+################################
+
+m<-round(seq(5,30,by=8))
+m<-seq(6,20,by=3)
+fscore.seq<-numeric()
+
+for(i in 1:length(m)){
+  set.seed(27947)
+  rf <- randomForest(Book_12Mo~., data=tours.rf[split,vars1],
+                     ntree = 200,
+                     strata= tours.rf$Book_12Mo[split],
+                     sampsize=c(minor,minor),
+                     importance =TRUE,
+                     mtry=m[i])
+  rf.class<- predict(rf, newdata=tours.rf[split.valid,], type="response")
+  fscore.seq[i]<-confusionMatrix(table(rf.class,tours.rf$Book_12Mo[split.valid]),
+                                 positive = "1")$byClass["F1"]
+  cat(i,"/",length(m),": Finished making forest #",i," with mtry =",m[i],"and F1 =",round(fscore.seq[i],3))
+  cat("\n")
+}
+
+
+m.best=9
+
+#######################
+#### Random Forest ####
+#######################
+set.seed(27947)
+RF <- randomForest(Book_12Mo~., data=tours.rf[split,vars1],
+                   ntree = 200, 
+                   strata= tours.rf$Book_12Mo[split], 
+                   sampsize=c(minor,minor),
+                   importance =TRUE,mtry=m.best,#from below
+                   do.trace=TRUE)
+print(RF)
+plot(RF)  
+
+
+
+# Make predictions #
+library(caret)
+RF.class<- predict(RF, newdata=tours.rf[split.test,], type="response")
+confusionMatrix(table(RF.class,tours.rf[split.test,]$Book_12Mo),positive = "1")
+fscore<-confusionMatrix(table(RF.class,tours.rf[split.test,]$Book_12Mo),
+                        positive = "1")$byClass["F1"]  
+fscore #0.55679
+
+RF$importance
+varImpPlot(RF) 
+
+
+confusionMatrix(table(RF.class,tours.rf[split.test,]$Book_12Mo),positive = "1")
+
+###################
+## Well, the F-score is about 0.547, but I improved the sensitivity to 0.723, which was about 0.6
+## the problem for this model is predict too many 1. I feel I need delete some inputs
