@@ -69,8 +69,8 @@ score$TourDate <- as.Date(score$TourDate, "%m/%d/%Y")
 score$TourDate <- format(score$TourDate, "%m/%Y")
 
 ### OK, let's check "TourDate" now
-score_date <- unique(score[,temp])
-model_date <- unique(model[,temp])
+score_date <- unique(score$TourDate)
+model_date <- unique(model$TourDate)
 setdiff(model_date, score_date)
 
 ### OK, nice, there is no difference now
