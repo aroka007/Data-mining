@@ -77,11 +77,11 @@ grid.arrange(p1, p2, ncol = 2)
 
 ### Looks good !!!
 
-#############################
-########  WOE TourDate  #####
-#############################
+#####################################
+########  Domestic_Depart_Time  #####
+#####################################
 df <- new.tours[split, c("Domestic_Depart_Time", "Book_12Mo")]
-df$Book_12Mo <- as.character(df$Book_12Mo)
+df$Book_12Mo <- as.numeric(df$Book_12Mo)
 # I don't knwo why onec it convert to numeric, 0 becomes to 1, and 1 becomes to 0
 ind <- which(df$Book_12Mo == 1)
 df$Book_12Mo[ind] = 0
@@ -135,7 +135,6 @@ ggplot(prop, aes(Domestic_Depart_Time_Con, pct, fill=Book_12Mo)) +
         axis.title.y = element_text(size = 16, face="bold"),
         axis.text.x = element_text(size = 12)) ->p2
 grid.arrange(p1, p2, ncol = 2)
-
 
 #####################################
 ########  Domestic_Arrival_Time  #####
@@ -413,7 +412,3 @@ ggplot(prop, aes(Out_Connect_Mins1_Con, pct, fill=Book_12Mo)) +
 grid.arrange(p1, p2, ncol = 2)
 
 new.tours$Outbound_Connect_Time_Mins_1 <- NULL
-
-
-
-
