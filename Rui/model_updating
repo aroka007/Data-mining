@@ -263,3 +263,141 @@ confusionMatrix(table(RF.class,tours.rf[split.test,]$Book_12Mo),positive = "1")
 ###################
 ## Well, the F-score is about 0.547, but I improved the sensitivity to 0.723, which was about 0.6
 ## the problem for this model is predict too many 1. I feel I need delete some inputs
+
+###################
+## Well, the F-score is about 0.547, but I improved the sensitivity to 0.723, which was about 0.6
+## the problem for this model is predict too many 1. I feel I need delete some inputs
+
+
+########################################
+######### Logistic Regression ##########
+########################################
+
+## If you run really full model, I don't know how long will it take.
+## So I just select the top variables selected by RF
+tours.mdl<-tours.imp[c("Book_12Mo","TourDate","Email","Tour_Region","Domestic_Depart_Time","Intr_Depart_Time",
+                       "Intr_Arrival_Time","Domestic_Arrival_Time","Past_Trips","TourCode_Groups",
+                       "Return_Connect_Time_Mins_1","Age_Con", "DB_Enter_Months","Return_Domestic_Gateway_Groups",
+                       "TourPriceCat","Pax_Category","SourceType","Tour_Type","State_Con","Grp_Size_ratio_Con")]
+# vars <- grep("^(EvalID|State|.NA$)",names(tours.mdl))
+
+levels(tours.mdl$Book_12Mo)
+
+
+vars <- -c(1, 74:84)
+
+full <- glm(Book_12Mo ~. , family=binomial, data=tours.mdl[split,])
+null<-glm(Book_12Mo ~1, family=binomial, data=tours.mdl[split, ])
+
+
+n<-sum(split)
+
+#Stepwise
+reg.bwd <- step(full, direction="back",k=log(n))
+reg.fwd <- step(null,scope=formula(full), direction="forward",k=log(n))
+
+summary(reg.bwd)
+
+# library(pROC)
+reg.bwd.prob<-predict(reg.bwd,tours.mdl[split.valid, ], type = "response") 
+rocCurve.reg <- roc(tours.mdl[split.valid,]$Book_12Mo, reg.bwd.prob)
+regThresh <-  coords(rocCurve.reg, x = "best", best.method = "closest.topleft", transpose = FALSE)
+
+reg.class <- as.factor(ifelse(reg.bwd.prob >= regThresh$threshold, 1,0))
+reg.fscore<-confusionMatrix(table(reg.class,new.tours[split.valid,]$Book_12Mo),
+                            positive = "1")$byClass["F1"]
+
+
+
+
+########################################
+####### Artificial Neural Network ######
+########################################
+
+
+#####################
+## ANN Preparation ##
+#####################
+
+tours.ann<-tours.mdl
+
+
+ScaleParams <- preProcess(tours.ann[split,], method=c("center", "scale"))
+tours.ann <-predict(ScaleParams, tours.ann)
+
+## Dummy Encoding: nominal inputs ##
+dummy <- dummyVars( ~ ., data = tours.ann[split, ], fullRank = TRUE)
+tours.ann.encode<-as.data.frame(predict(dummy,  tours.ann)) 
+tours.ann.encode$Book_12Mo<-tours.ann$Book_12Mo
+
+## Prepare train/validation sets as matrices ##
+inp.n <- grep("^(Book_12Mo)", names(tours.ann.encode)) 
+
+x.train <- as.matrix(tours.ann.encode[split,-inp.n])
+y.train<- as.matrix(tours.ann.encode[split,"Book_12Mo"])
+x.valid<-as.matrix(tours.ann.encode[split.valid,-inp.n])
+y.valid<-as.matrix(tours.ann.encode[split.valid,"Book_12Mo"])
+
+# x.test<-as.matrix(tours.ann.encode[split.test,-inp.n])
+# ####################
+### ANN Building ###
+####################
+library(keras)
+
+use_session_with_seed(27947, disable_gpu=FALSE)
+ann <- keras_model_sequential()
+ann %>%
+  layer_dense(units = 128, activation = "tanh", input_shape = c(183))%>%   # update input shape
+  layer_dense(units = 128, activation = "tanh") %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+
+
+ann %>% compile(
+  loss = "binary_crossentropy",
+  optimizer = "adam",
+  metrics = "accuracy"
+)
+
+
+
+callbacks.list = list(
+  callback_early_stopping(
+    monitor = "val_loss", # change
+    patience = 5
+  ),
+  callback_model_checkpoint(
+    filepath="my_ann_raw.h5",
+    monitor = "val_loss",  # change
+    save_best_only = TRUE
+  )
+)
+
+
+
+history <- ann %>% fit(
+  x= x.train,
+  y= y.train,
+  epochs = 40,
+  validation_data = list(x.valid,y.valid),
+  verbose = 1,
+  callbacks = callbacks.list
+)
+
+
+
+ann.select <-load_model_hdf5("my_ann_raw.h5") 
+
+
+## Prediction ##
+ann.prob<-predict_proba(ann.select,x.valid)
+
+# Use alternative cutoff
+rocCurve.ann <- roc(tours.ann[split.valid,]$Book_12Mo, ann.prob, quiet=TRUE)
+annThresh <-  coords(rocCurve.ann, x = "best", best.method = "closest.topleft", transpose = FALSE)
+ann.class <- as.factor(ifelse(ann.prob >= annThresh$threshold, 1,0))
+ann.fscore<-confusionMatrix(table(ann.class,tours.ann[split.valid,]$Book_12Mo),
+                            positive = "1")$byClass["F1"]
+
+ann.fscore  # f-score=F1 0.51
+
