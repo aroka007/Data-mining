@@ -1,0 +1,20 @@
+##################################################
+#Total Connections# use this instead of return, outbound connections
+####################
+new.tours$Total_Connections<-new.tours$Outbound_Connections+new.tours$Return_Connections
+new.tours$Total_Connections<-as.character(new.tours$Total_Connections)
+
+df.ratio<-new.tours[split,c("Outbound_Connections","Book_12Mo")]
+IV.ratio<-create_infotables(data=df.ratio,y="Book_12Mo")
+plot_infotables(IV.ratio, "Outbound_Connections")
+
+fctr1 <- c(0,2,3,5,6,7)
+fctr2 <- c(1,4,8)
+
+ind1 <- which(new.tours$Total_Connections %in% fctr1)
+ind2 <- which(new.tours$Total_Connections %in% fctr2)
+
+new.tours$Total_Connections[ind1] <- "fctr1"
+new.tours$Total_Connections[ind2] <- "fctr2"
+
+new.tours$Total_Connections<-as.factor(new.tours$Total_Connections)
