@@ -540,3 +540,67 @@ ggplot(prop, aes(Meals_Avg_Con, pct, fill=Book_12Mo)) +
         axis.text.x = element_text(size = 12)) ->p2
 grid.arrange(p1, p2, ncol = 2)
 
+################################################
+################  GUSS_Avg_Con  ##############
+################################################
+ind <- which(new.tours$GUSS_Avg==0)
+length(ind)
+new.tours$GUSS_Avg[ind] <- "NA"
+str(new.tours$GUSS_Avg)
+ind <- which(new.tours$GUSS_Avg =="NA")
+length(ind)
+
+df1 <- new.tours[split, c("GUSS_Avg", "Book_12Mo")]
+df1$Book_12Mo <- as.numeric(df1$Book_12Mo)
+# I don't knwo why onec it convert to numeric, 0 becomes to 1, and 1 becomes to 0
+ind <- which(df1$Book_12Mo == 1)
+df1$Book_12Mo[ind] = 0
+ind <- which(df1$Book_12Mo == 2)
+df1$Book_12Mo[ind] = 1
+mean(df1$Book_12Mo) # Check
+
+
+IV <- create_infotables(data = df1, y="Book_12Mo")
+IV[["Tables"]][["GUSS_Avg"]] <- IV[["Tables"]][["GUSS_Avg"]][order(IV[["Tables"]][["GUSS_Avg"]]$WOE),]
+plot_infotables(IV, "GUSS_Avg")
+woe <- IV[["Tables"]][["GUSS_Avg"]]
+sum(woe$IV)
+
+
+poor <- woe$GUSS_Avg[which(woe$WOE < -0.1)]
+fair <- woe$GUSS_Avg[which(woe$WOE <=0.01 & woe$WOE > -0.1)]
+med <- woe$GUSS_Avg[which(woe$WOE <= 0.1 & woe$WOE > 0.02)]
+good <- woe$GUSS_Avg[which(woe$WOE > 0.1)]
+length(poor)+length(fair)+ length(med)+length(good)
+length(unique(new.tours$GUSS_Avg))
+
+new.tours$GUSS_Avg_Con <- new.tours$GUSS_Avg 
+new.tours$GUSS_Avg_Con <- as.character(new.tours$GUSS_Avg_Con)
+
+ind1 <- which(new.tours$GUSS_Avg_Con %in% poor)
+ind2 <- which(new.tours$GUSS_Avg_Con %in% fair)
+ind3 <- which(new.tours$GUSS_Avg_Con %in% med)
+ind4 <- which(new.tours$GUSS_Avg_Con %in% good)
+
+length(ind1)+length(ind2)+ length(ind3)+length(ind4)
+
+new.tours$GUSS_Avg_Con[ind1] <- "poor"
+new.tours$GUSS_Avg_Con[ind2] <- "fair"
+new.tours$GUSS_Avg_Con[ind3] <- "med"
+new.tours$GUSS_Avg_Con[ind4] <- "good"
+
+new.tours$GUSS_Avg_Con <- as.factor(new.tours$GUSS_Avg_Con)
+levels(new.tours$GUSS_Avg_Con)
+new.tours$GUSS_Avg_Con <- factor(new.tours$GUSS_Avg_Con, levels = c("poor","fair","med","good"))
+
+ggplot(new.tours, aes(GUSS_Avg_Con)) +
+  geom_bar() -> p1
+prop <- new.tours %>% group_by(GUSS_Avg_Con, Book_12Mo) %>% tally() %>% mutate(pct=n/sum(n)) %>% filter(Book_12Mo==1)
+ggplot(prop, aes(GUSS_Avg_Con, pct, fill=Book_12Mo)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = n), vjust = 2) +
+  geom_text(aes(label = scales::percent(pct)), vjust = 4)+
+  theme(axis.title.x = element_text(size = 16, face="bold"),
+        axis.title.y = element_text(size = 16, face="bold"),
+        axis.text.x = element_text(size = 12)) ->p2
+grid.arrange(p1, p2, ncol = 2)
