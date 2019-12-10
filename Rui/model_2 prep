@@ -1,6 +1,15 @@
 # Load model1.Rdata
 # There is 1 df, called "new.tours"
 
+##########################################################
+###########  All the libraries you need, I guess #########
+##########################################################
+library(tidyverse)
+library(Information)
+library(caTools)
+library(gridExtra)
+
+
 #############################
 ########  WOE TourDate  #####
 #############################
@@ -669,3 +678,10 @@ ggplot(prop, aes(Optionals_Avg_Con, pct, fill=Book_12Mo)) +
         axis.title.y = element_text(size = 16, face="bold"),
         axis.text.x = element_text(size = 12)) ->p2
 grid.arrange(p1, p2, ncol = 2)
+
+################################################
+################  Bus_Avg  #################
+################################################
+ind <- which(new.tours$Bus_Avg==0)
+length(ind)
+# 18178 "0"s, so not usful
