@@ -1,0 +1,130 @@
+####Missing Value Check####
+####Austin's code as a base####
+
+#### New part is under the full line of hashmarks ####
+
+tours<-read.csv("project_modeling_data.csv", header=TRUE, na.strings=c(".", "NA", "", "?"))
+#str(tours)
+tours$Book_12Mo<-as.factor(tours$Book_12Mo)
+
+#Turn inputs into factors:
+tours$Recommend_GAT<-as.factor(tours$Recommend_GAT)
+tours$TravelAgain<-as.factor(tours$TravelAgain)
+tours$Groups_Interest<-as.factor(tours$Groups_Interest)
+tours$Reference<-as.factor(tours$Reference)
+
+tours$Overall_Impression<-factor(tours$Overall_Impression,ordered = T)
+tours$Pre_Departure<-factor(tours$Pre_Departure,ordered = T)
+tours$Flight_Itin<-factor(tours$Flight_Itin,ordered=T)
+tours$TD_Overall<-factor(tours$TD_Overall,ordered = T)
+
+tours$Extension<-as.factor(tours$Extension)
+tours$Insurance<-as.factor(tours$Insurance)
+tours$FltGty<-as.factor(tours$FltGty)
+tours$Complaint_Event<-as.factor(tours$Complaint_Event)
+tours$Voucher_Event<-as.factor(tours$Voucher_Event)
+
+
+tours$Outbound_Connections <- as.factor(tours$Outbound_Connections)
+tours$Return_Connections <- as.factor(tours$Return_Connections)
+
+
+
+### recoding date and time variabes
+#install.packages("chron")
+library(chron)
+
+tours$TourDate <- dates(as.character(tours$TourDate))
+
+tours$Domestic_Depart_Time <- times(tours$Domestic_Depart_Time)
+tours$Intr_Depart_Time <- times(tours$Intr_Depart_Time)
+tours$Intr_Arrival_Time <- times(tours$Intr_Arrival_Time)
+tours$Domestic_Arrival_Time <- times(tours$Domestic_Arrival_Time)
+
+
+
+#from WOE consolidation:
+tours <- cbind(tours,dat[grep("(Tour_Days_Con|Grp_Size_ratio_Con|Age_Con|State_Con)",names(dat))])
+tours$Tour_Days_Con <- as.factor(tours$Tour_Days_Con)
+tours$Grp_Size_ratio_Con <- as.factor(tours$Grp_Size_ratio_Con)
+tours$Age_Con <- as.factor(tours$Age_Con)
+tours$State_Con <- as.factor(tours$State_Con)
+
+############################ NEW STUFF ###########################################
+################## Check Levels and Hidden Missing Values ########################
+
+####These variables have 6 levels whrn they should have 5####
+str(tours$Flight_Itin)#has 0 when it shouldn't
+str(tours$Overall_Impression)#has 0 when it shouldn't
+str(tours$Pre_Departure)#has 0 when it shouldn't
+sum(tours$Flight_Itin==0) #726
+sum(tours$Overall_Impression==0) #318
+sum(tours$Pre_Departure==0) #498
+str(tours$TD_Overall) #has 0 when it shouldn't
+
+####the following have 3 levels when they should have 2####
+str(tours$Reference) #has 0 when it shouldn't
+str(tours$Groups_Interest) #has 0 when it shouldn't
+str(tours$TravelAgain) #has 0 when it shouldn't
+str(tours$Recommend_GAT) #has 0 when it shouldn't
+sum(tours$Recommend_GAT==0)#540
+str(tours$Email)
+view(tours$Email)#third level called bounced. Should combine with unavailable
+str(tours$SourceType)#has 11 levels when only 3+ "other" are listed in decription
+str(tours$Past_Trips)#could be made ordinal
+str(tours$FltGty) #Fine as is
+
+#### histograms and fixing####
+library(lattice)
+barchart(tours$Reference, horizontal=F)
+tours$Reference[tours$Reference==0]<-1 #convert 0s to negative response
+sum(new.tours$Reference==0)
+
+barchart(tours$Groups_Interest, horizontal=F)
+tours$Groups_Interest[tours$Groups_Interest==0]<-1 #convert 0s to negative response
+sum(tours$Groups_Interest==0)
+
+barchart(tours$TravelAgain, horizontal=F)
+tours$TravelAgain[tours$TravelAgain==0]<-1 #convert 0s to negative response
+sum(tours$TravelAgain==0)
+
+barchart(tours$Recommend_GAT, horizontal=F)
+tours$Recommend_GAT[tours$Recommend_GAT==0]<-1 #convert 0s to negative response
+sum(tours$Recommend_GAT==0)
+
+barchart(tours$Email, horizontal=F)
+tours$Email[tours$Email=="Bounced"]<-"Unavailable"
+sum(tours$Email=="Bounced")
+
+tours.rattle<-tours
+library(rattle)
+rattle()
+
+barchart(tours$Flight_Itin, horizontal=F) #Should not use this variable
+tours$Flight_Itin[tours$Flight_Itin==0]<-NA
+
+barchart(tours$Overall_Impression, horizontal=F)
+sum(tours$Overall_Impression==0)
+tours$Overall_Impression[tours$Overall_Impression==0]<-4 #Set 0s to 4 since they have the most similar ratio of positive responses from mosaic plot
+
+barchart(tours$Pre_Departure, horizontal=F)
+sum(tours$Pre_Departure==0)
+tours$Pre_Departure[tours$Pre_Departure==0]<-4 #Set 0s to 4 since they have the most similar ratio of positive responses from mosaic plot
+
+barchart(tours$TD_Overall, horizontal=F)
+tours$TD_Overall[tours$TD_Overall==0]<-4 #Set 0s to 4 since they have the most similar ratio of positive responses from mosaic plot
+
+#Remove variables that may not be potential predictors! (Check later!)
+var.rem<--grep("^(FY|Complaint_Event|Grp_Size_Cat|Grp_Size|Capacity|TD_Overall|Trip_no|Promo_Disc|Return_Connect_Time_Mins_2|Return_Connect_Time_Mins_1|Return_Connect_Time_Mins_2|Eval_Contact_Days|Outbound_Connect_Time_Mins_2|Optionals_2orUnder|Bus_2orUnder|Outbound_Connect_Time_Mins_1|Outbound_Connect_Time_Mins_2|Cus_ID|ProdTour_ID|SalesTourID|Trip_No|HH_ID| Optionals_Avg|Bus_Avg|Meals_Avg|Hotels_Avg|GUSS_Avg|Hotel_2orUnder|Meals_2orUnder|GUSS_2orUnder|TourRegion|Outbound_Connect_Gateway1|Outbound_Connect_Gateway2|Return_Connect_Gateway1|Return_Connect_Gateway2|Start_Day|End_Day|FltGty|Optionals_Avg|Tour_Region|Outbound_Intr_Gateway|Return_Intr_Gateway)$",names(tours))
+#why is TD_Overall in this list?
+
+
+
+new.tours<-tours[var.rem]
+str(new.tours)
+#-1 is missing here so assign na
+new.tours$Outbound_Connections[new.tours$Outbound_Connections %in% c(-3,-2,-1,4,5)]<-NA
+new.tours$Return_Connections[new.tours$Return_Connections %in% c(-3,-2,-1,4,5)]<-NA
+
+
+sort(sapply(new.tours, function(x) sum(is.na(x))),decreasing = T)
