@@ -1,0 +1,474 @@
+# Load model1.Rdata
+# There is only 1 df, called "new.tours"
+
+##########################################################
+###########  All the libraries you need, I guess #########
+##########################################################
+library(tidyverse)
+library(Information)
+library(caTools)
+library(gridExtra)
+library(caret)
+library(randomForest)
+library(pROC)
+library(keras)
+
+##########################################################
+## Get the names for every col
+Varnames <- as.data.frame(seq(from=1, to=ncol(new.tours)), col.names="index")
+colnames(Varnames)[1] <-"index"
+Varnames$name <- names(new.tours) 
+
+##  Variables I'm going to remove
+new.tours.b <- new.tours 
+rem <- -c(14:43, 45, 53,54,55:57,59,60)
+Varnames[rem,2]
+
+new.tours <- new.tours.b[ ,rem]
+
+##  OK, I need to do WOE for Optionals
+set.seed(27947)
+split = sample.split(new.tours$Book_12Mo, SplitRatio = 0.5) 
+split.valid <-!split
+split.test <- !split
+split2 <- sample.split(new.tours$Book_12Mo[!split], SplitRatio = 0.5)
+split.valid[split.valid == TRUE] = split2
+split.test[split.test == TRUE] = !split2
+
+################################################
+################  Optionals_Con  ###############
+################################################
+ind <- which(new.tours$Optionals == 0)
+length(ind)
+
+df1 <- new.tours[split, c("Optionals", "Book_12Mo")]
+df1$Book_12Mo <- as.numeric(df1$Book_12Mo)
+# I don't knwo why onec it convert to numeric, 0 becomes to 1, and 1 becomes to 0
+ind <- which(df1$Book_12Mo == 1)
+df1$Book_12Mo[ind] = 0
+ind <- which(df1$Book_12Mo == 2)
+df1$Book_12Mo[ind] = 1
+mean(df1$Book_12Mo) # Check
+
+df1$Optionals <- as.factor(df1$Optionals)
+IV <- create_infotables(data = df1, y="Book_12Mo")
+IV[["Tables"]][["Optionals"]] <- IV[["Tables"]][["Optionals"]][order(IV[["Tables"]][["Optionals"]]$WOE),]
+plot_infotables(IV, "Optionals")
+woe <- IV[["Tables"]][["Optionals"]]
+sum(woe$IV)
+## wow, IV = 0.645, possiblely the highest IV I have seen so far, how could we miss this variable!!!
+
+prop <- new.tours %>% group_by(Optionals, Book_12Mo) %>% tally() %>% mutate(pct=n/sum(n))
+
+poor <- woe$Optionals[which(woe$WOE <= -0.13)]
+fair <- woe$Optionals[which(woe$WOE <=0 & woe$WOE > -0.13)]
+med <- woe$Optionals[which(woe$WOE <= 0.22 & woe$WOE > 0)]
+good <- woe$Optionals[which(woe$WOE > 0.22)]
+length(poor)+length(fair)+ length(med)+length(good)
+length(unique(new.tours$Optionals))
+## missing 2 levels
+ind <- c(poor,fair,med,good)
+temp <- unique(new.tours$Optionals)
+ind <- as.numeric(ind)
+setdiff(temp,ind)
+# 38, 45, 120
+
+good <- c(good,120)
+med <- c(med, 38,45)
+
+new.tours$Optionals_Con <- new.tours$Optionals 
+new.tours$Optionals_Con <- as.character(new.tours$Optionals_Con)
+
+ind1 <- which(new.tours$Optionals_Con %in% poor)
+ind2 <- which(new.tours$Optionals_Con %in% fair)
+ind3 <- which(new.tours$Optionals_Con %in% med)
+ind4 <- which(new.tours$Optionals_Con %in% good)
+
+length(ind1)+length(ind2)+ length(ind3)+length(ind4)
+
+new.tours$Optionals_Con[ind1] <- "poor"
+new.tours$Optionals_Con[ind2] <- "fair"
+new.tours$Optionals_Con[ind3] <- "med"
+new.tours$Optionals_Con[ind4] <- "good"
+
+new.tours$Optionals_Con <- as.factor(new.tours$Optionals_Con)
+levels(new.tours$Optionals_Con)
+new.tours$Optionals_Con <- factor(new.tours$Optionals_Con, levels = c("poor","fair","med","good"))
+
+ggplot(new.tours, aes(Optionals_Con)) +
+  geom_bar() -> p1
+prop <- new.tours %>% group_by(Optionals_Con, Book_12Mo) %>% tally() %>% mutate(pct=n/sum(n)) %>% filter(Book_12Mo==1)
+ggplot(prop, aes(Optionals_Con, pct, fill=Book_12Mo)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = n), vjust = 2) +
+  geom_text(aes(label = scales::percent(pct)), vjust = 4)+
+  theme(axis.title.x = element_text(size = 16, face="bold"),
+        axis.title.y = element_text(size = 16, face="bold"),
+        axis.text.x = element_text(size = 12)) ->p2
+grid.arrange(p1, p2, ncol = 2)
+
+#### Delete Optionals
+new.tours$Optionals <- NULL
+
+###################
+####Functions######
+###################
+# library(tidyverse)
+inx <- function (tours, inp.n) { # data: current dataframe; inp.n: position for non-inputs
+  # numeric input indicator
+  indx <- sapply(tours, is.numeric)
+  indx[inp.n]<-FALSE
+  
+  # nominal input indicator
+  index.cat<-sapply(tours, is.factor)
+  index.cat[inp.n]<-FALSE
+  
+  # missing value indicator
+  index.na<-sapply(tours,function(x) any(is.na(x)))
+  index.na[inp.n]<-FALSE
+  
+  data.frame(indx, index.cat, index.na)
+}
+
+impute <- function(x,y) {
+  x[is.na(x)]<-y
+  x
+}
+
+## Mode function ##
+mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+## Mean function ##
+means <- function(x) { mean(x, na.rm = TRUE) }
+
+
+#################################################################################################
+str(new.tours)
+
+######################
+##### Imputation #####
+######################
+Varnames <- as.data.frame(seq(from=1, to=ncol(new.tours)), col.names="index")
+colnames(Varnames)[1] <-"index"
+Varnames$name <- names(new.tours) 
+
+rem <- -c(5,6,14,15, 21:25)
+
+tours.imp <- new.tours[ ,rem]
+str(tours.imp)
+
+
+#Routine Update#
+inp.n <- grep("^(EvalID|Book_12Mo)$",names(tours.imp))
+inx3<-inx(tours.imp, inp.n) 
+indx<-inx3$indx
+index.cat<-inx3$index.cat
+index.na<-inx3$index.na
+#####################
+
+names(tours.imp)[index.na==T]
+summary(tours.imp[index.na])
+
+
+# numeric impute: By mean #
+Mean<-sapply(tours.imp[split,indx],means)##remove in scoring already saved!!
+tours.imp[indx]<-as.data.frame(mapply(impute,x=tours.imp[indx],y = Mean))
+
+# Nominal Input: By Mode #
+Mode<-sapply(tours.imp[split, index.cat],mode)
+tours.imp[index.cat]<-as.data.frame(mapply(impute,x=tours.imp[index.cat],y = Mode))
+
+sort(sapply(tours.imp, function(x) sum(is.na(x))),decreasing = T)
+
+# library(Amelia)
+# missmap(tours.imp)
+# dev.off()
+
+
+# create missing value flag #
+tours.imp[paste(names(tours.imp)[index.na], "NA", sep=".")] <- ifelse(
+  is.na(new.tours[index.na]), 1, 0)
+
+tours.imp[grep("NA$",names(tours.imp))]<-lapply(
+  tours.imp[grep("NA$",names(tours.imp))], as.factor) 
+
+#######################
+#### Random Forest #### 
+#######################
+tours.rf<-tours.imp
+str(tours.rf)
+vars1 <- -grep("^(EvalID|State)$",names(tours.rf))
+
+minor<-unname(summary(tours.rf$Book_12Mo[split])[2])
+
+
+# library(randomForest)
+set.seed(27947)
+
+################################
+#### Parameter Tuning: mtry ####
+################################
+
+
+m<-seq(1,20,by=1)
+fscore.seq<-numeric()
+
+for(i in 1:length(m)){
+  set.seed(27947)
+  rf <- randomForest(Book_12Mo~., data=tours.rf[split,vars1],
+                     ntree = 500,
+                     strata= tours.rf$Book_12Mo[split],
+                     sampsize=c(minor,minor),
+                     importance =TRUE,
+                     mtry=m[i])
+  rf.class<- predict(rf, newdata=tours.rf[split.valid,], type="response")
+  fscore.seq[i]<-confusionMatrix(table(rf.class,tours.rf$Book_12Mo[split.valid]),
+                                 positive = "1")$byClass["F1"]
+  cat(i,"/",length(m),": Finished making forest #",i," with mtry =",m[i],"and F1 =",round(fscore.seq[i],3))
+  cat("\n")
+}
+
+
+m.best=4
+
+#######################
+#### Random Forest ####
+#######################
+set.seed(27947)
+RF <- randomForest(Book_12Mo~., data=tours.rf[split,vars1],
+                   ntree = 400, 
+                   strata= tours.rf$Book_12Mo[split], 
+                   sampsize=c(minor,minor),
+                   importance =TRUE,mtry=m.best,#from below
+                   do.trace=TRUE)
+print(RF)
+plot(RF)  
+
+
+
+# Make predictions #
+# library(caret)
+RF.class<- predict(RF, newdata=tours.rf[split.test,], type="response")
+confusionMatrix(table(RF.class,tours.rf[split.test,]$Book_12Mo),positive = "1")
+fscore<-confusionMatrix(table(RF.class,tours.rf[split.test,]$Book_12Mo),
+                        positive = "1")$byClass["F1"]  
+fscore 
+
+RF$importance
+varImpPlot(RF) 
+
+
+confusionMatrix(table(RF.class,tours.rf[split.test,]$Book_12Mo),positive = "1")
+
+
+########################################
+######### Logistic Regression ##########
+########################################
+
+tours.mdl <- tours.rf[ ,c(1:26)]
+
+vars<--grep("^(EvalID|Email.NA|Outbound_Intr_Gateway.NA|Outbound_Connections.NA|Return_Intr_Gateway.NA|SourceType.NA|Outbound_Domestic_Gateway_Groups.NA|TourCode_Groups.NA|Return_Connect_Gateway1_Groups.NA|Return_Domestic_Gateway_Groups.NA)$",names(tours.mdl))
+levels(tours.mdl$Book_12Mo)
+
+full <- glm(Book_12Mo ~., family=binomial, data=tours.mdl[split, vars])
+null<-glm(Book_12Mo ~1, family=binomial, data=tours.mdl[split, vars])
+
+n<-sum(split)
+
+
+#Stepwise
+reg.step <- step(null, scope=formula(full), direction="both",k=log(n))
+summary(reg.step)
+
+## Results
+#  formula = Book_12Mo ~ Past_Trips + Email + Outbound_Domestic_Gateway_Groups + 
+# TourCode_Groups + Age_Con + TravelAgain,
+
+# library(pROC)
+# library(caret)
+reg.step.prob<-predict(reg.step,tours.mdl[split.valid, vars], type = "response") 
+rocCurve.reg <- roc(tours.mdl[split.valid,]$Book_12Mo, reg.step.prob)
+regThresh <-  coords(rocCurve.reg, x = "best", best.method = "closest.topleft", transpose = FALSE)
+regThresh
+reg.class <- as.factor(ifelse(reg.step.prob >= regThresh$threshold, 1,0))
+reg.fscore<-confusionMatrix(table(reg.class,new.tours[split.valid,]$Book_12Mo),
+                            positive = "1")$byClass["F1"]
+reg.fscore
+
+
+# BWD
+reg.bwd <- step(full, direction="backward",k=log(n))
+summary(reg.bwd)
+
+## Results
+# formula = Book_12Mo ~ Pax_Category + Email + Past_Trips + 
+# Tour_Days_Con + Grp_Size_ratio_Con + Age_Con + State_Con + 
+# TourDate_Con + Domestic_Depart_Time_Con + Domestic_Arrival_Time_Con + Optionals_Avg_Con
+
+
+#Book_12Mo ~ Email + Past_Trips + Tour_Days_Con + 
+#  Age_Con + TourDate_Con + Domestic_Depart_Time_Con + Optionals_Avg_Con + 
+#  OutBound_Gateway
+
+reg.bwd.prob<-predict(reg.bwd,tours.mdl[split.valid, vars], type = "response") 
+rocCurve.reg <- roc(tours.mdl[split.valid,]$Book_12Mo, reg.bwd.prob)
+regThresh <-  coords(rocCurve.reg, x = "best", best.method = "closest.topleft", transpose = FALSE)
+regThresh
+reg.class <- as.factor(ifelse(reg.bwd.prob >= regThresh$threshold, 1,0))
+reg.fscore<-confusionMatrix(table(reg.class,new.tours[split.valid,]$Book_12Mo),
+                            positive = "1")$byClass["F1"]
+
+
+########################################
+####### Artificial Neural Network ######
+########################################
+
+#####################
+## ANN Preparation ##
+#####################
+
+tours.ann<-tours.mdl
+vars.ann = -c(1,18)
+
+ # extract variable names from bwd model
+
+
+## Standardization: numeric inputs ## 
+# library(caret)
+ScaleParams <- preProcess(tours.ann[split, vars.ann], method=c("center", "scale"))
+tours.ann[vars.ann]<-predict(ScaleParams, tours.ann[vars.ann])
+
+
+## Dummy Encoding: nominal inputs ##
+dummy <- dummyVars( ~ ., data = tours.ann[split, vars.ann], fullRank = TRUE)
+tours.ann.encode<-as.data.frame(predict(dummy,  tours.ann[vars.ann])) 
+tours.ann.encode$Book_12Mo<-tours.ann$Book_12Mo
+
+
+
+## Prepare train/validation sets as matrices ##
+inp.n <- grep("^(Book_12Mo)", names(tours.ann.encode)) 
+
+x.train <- as.matrix(tours.ann.encode[split,-inp.n])
+y.train<- as.matrix(tours.ann.encode[split,"Book_12Mo"])
+x.valid<-as.matrix(tours.ann.encode[split.valid,-inp.n])
+y.valid<-as.matrix(tours.ann.encode[split.valid,"Book_12Mo"])
+
+x.test<-as.matrix(tours.ann.encode[split.test,-inp.n])
+# ####################
+### ANN Building ###
+####################
+# library(keras)
+
+
+use_session_with_seed(27947, disable_gpu=FALSE)
+ann <- keras_model_sequential()
+ann %>%
+  layer_dense(units = 96, activation = "elu") %>% 
+  layer_dense(units = 96, activation = "relu", input_shape = c(ncol(x.train)),
+              kernel_regularizer = regularizer_l2(l = 0.001))%>%
+  layer_dropout(0.5) %>% 
+  layer_dense(units = 96, activation = "tanh") %>%
+  layer_dropout(0.5) %>% 
+  layer_dense(units = 96, activation = "relu",
+              kernel_regularizer = regularizer_l2(l = 0.001))%>%
+  layer_dropout(0.5) %>% 
+  layer_dense(units = 96, activation = "tanh") %>%
+  layer_dropout(0.5) %>% 
+  layer_dense(units = 1, activation = "sigmoid")
+
+
+ann %>%
+  layer_dense(units = 128, activation = "tanh", input_shape = c(ncol(x.train)))%>%
+  layer_dense(units = 128, activation = "tanh") %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+
+ann %>% compile(
+  loss = "binary_crossentropy",
+  optimizer = "adam",
+  metrics = "accuracy"
+)
+
+
+
+callbacks.list = list(
+  callback_early_stopping(
+    monitor = "val_loss", # change
+    patience = 5
+  ),
+  callback_model_checkpoint(
+    filepath="my_ann_raw.h5",
+    monitor = "val_loss",  # change
+    save_best_only = TRUE
+  )
+)
+
+
+
+history <- ann %>% fit(
+  x= x.train,
+  y= y.train,
+  epochs = 50,
+  validation_data = list(x.valid,y.valid),
+  verbose = 1,
+  callbacks = callbacks.list
+)
+
+
+
+ann.select <-load_model_hdf5("my_ann_raw.h5") 
+
+
+## Prediction ##
+ann.prob<-predict_proba(ann.select,x.test)
+
+# Use alternative cutoff
+rocCurve.ann <- roc(tours.ann[split.test,]$Book_12Mo, ann.prob)
+annThresh <-  coords(rocCurve.ann, x = "best", best.method = "closest.topleft", transpose = FALSE)
+ann.class <- as.factor(ifelse(ann.prob >= annThresh$threshold, 1,0))
+ann.fscore<-confusionMatrix(table(ann.class,tours.ann[split.test,vars]$Book_12Mo),
+                            positive = "1")$byClass["F1"]
+
+ann.fscore  # f-score=F1 0.5035705 
+
+# # #Test data#
+ann.prob.test<-predict_proba(ann.select,x.test)
+ann.class.test <- as.factor(ifelse(ann.prob.test >= annThresh$threshold, 1,0))
+ 
+ann.fscore.test<-confusionMatrix(table(ann.class.test,tours.ann[split.test,vars]$Book_12Mo),
+positive = "1")$byClass["F1"]
+
+ann.fscore #same to validation one
+
+#####################
+#### Random Forest #### internal downsampling
+#######################
+
+tours.rf<-tours.imp
+str(tours.rf)
+vars1<--grep("^(EvalID|)$", names(tours.rf))
+
+minor<-unname(summary(tours.rf$Book_12Mo[split])[2])
+
+#can't handle more than 53 categories!
+library(randomForest)
+set.seed(27947)
+RF <- randomForest(Book_12Mo~., data=tours.rf[split,vars1],
+                   ntree = 200, 
+                   strata= tours.rf$Book_12Mo[split], 
+                   sampsize=c(minor,minor),
+                   importance =TRUE,mtry=m.best)#from below
+#print(RF)
+plot(RF)  
+
+
+
+# Make predictions #
+library(caret)
+RF.class<- predict(RF, newdata=tours.rf[split.valid,], type="response")
+fscore<-confusionMatrix(table(RF.class,tours.rf[split.valid,]$Book_12Mo),
+                        positive = "1")$byClass["F1"]  
+fscore #0.5293922 
