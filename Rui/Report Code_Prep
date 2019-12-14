@@ -275,3 +275,40 @@ new.tours$Meals_Avg_Con[ind4] <- "good"
 new.tours$Meals_Avg_Con <- as.factor(new.tours$Meals_Avg_Con)
 levels(new.tours$Meals_Avg_Con)
 new.tours$Meals_Avg_Con <- factor(new.tours$Meals_Avg_Con, levels = c("poor","fair","med","good"))
+
+################################################
+################  Meals_Avg_Con  ##############
+################################################
+ind <- which(dat$Meals_Avg==0)
+length(ind)
+dat$Meals_Avg[ind] <- "NA"
+str(dat$Meals_Avg)
+
+df1 <- dat[split, c("Meals_Avg", "Book_12Mo")]
+
+IV <- create_infotables(data = df1, y="Book_12Mo")
+IV[["Tables"]][["Meals_Avg"]] <- IV[["Tables"]][["Meals_Avg"]][order(IV[["Tables"]][["Meals_Avg"]]$WOE),]
+# plot_infotables(IV, "Meals_Avg")
+woe <- IV[["Tables"]][["Meals_Avg"]]
+
+poor <- woe$Meals_Avg[which(woe$WOE <= 0)]
+fair <- woe$Meals_Avg[which(woe$WOE <=0.02 & woe$WOE > 0)]
+med <- woe$Meals_Avg[which(woe$WOE <= 0.19 & woe$WOE > 0.02)]
+good <- woe$Meals_Avg[which(woe$WOE > 0.19)]
+
+dat$Meals_Avg_Con <- as.character(dat$Meals_Avg)
+
+ind1 <- which(dat$Meals_Avg_Con %in% poor)
+ind2 <- which(dat$Meals_Avg_Con %in% fair)
+ind3 <- which(dat$Meals_Avg_Con %in% med)
+ind4 <- which(dat$Meals_Avg_Con %in% good)
+length(ind1)+length(ind2)+ length(ind3)+length(ind4)
+
+dat$Meals_Avg_Con[ind1] <- "poor"
+dat$Meals_Avg_Con[ind2] <- "fair"
+dat$Meals_Avg_Con[ind3] <- "med"
+dat$Meals_Avg_Con[ind4] <- "good"
+
+dat$Meals_Avg_Con <- factor(dat$Meals_Avg_Con, order=T,
+                            levels = c("poor","fair","med","good"))
+str(dat$Meals_Avg_Con)
