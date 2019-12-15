@@ -7,8 +7,7 @@ library(chron)
 ###########################################
 ###############  Load Data  ###############
 ###########################################
-dat <- read.csv("D:/Google Drive/Math/Data Mining/Project/modeling_data.csv", 
-                header=TRUE, na.strings=c(".", "NA", "", "?"))
+dat <- read.csv("modeling_data.csv", header=TRUE, na.strings=c(".", "NA", "", "?"))
 # library(caTools)
 set.seed(27947)
 split = sample.split(dat$Book_12Mo, SplitRatio = 0.5) 
