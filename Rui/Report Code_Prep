@@ -16,3 +16,31 @@ split.test <- !split
 split2 <- sample.split(dat$Book_12Mo[!split], SplitRatio = 0.5)
 split.valid[split.valid == TRUE] = split2
 split.test[split.test == TRUE] = !split2
+
+############################################################
+################  Prepare For Consolidation  ###############
+############################################################
+
+# 1. Convert TourDate to MMYY
+dat$TourDate <- as.Date(dat$TourDate, "%m/%d/%Y")
+dat$TourDate <- format(dat$TourDate, "%m/%Y")
+
+# 2. For "time" variable, only keep hours
+# library(chron)
+ind <- c(76,82,85,91)
+## convert to time 
+for (i in seq(1:4)){
+  temp <- ind[i]
+  dat[,temp] <- times(dat[,temp])
+}
+
+## only keep hour
+for (i in seq(1:4)){
+  temp <- ind[i]
+  dat[,temp] <- hours(dat[,temp])
+}
+
+for (i in seq(1:4)){
+  temp <- ind[i]
+  dat[ ,temp] <- as.factor(dat[ ,temp])
+}
