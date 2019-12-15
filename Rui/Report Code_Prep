@@ -742,7 +742,7 @@ dat$Return_Connect_Mins2_Con <- as.factor(dat$Return_Connect_Mins2_Con)
 # levels(dat$Return_Connect_Mins1_Con)
 dat$Return_Connect_Time_Mins_2 <- NULL
 
-
+save(dat, file = "digger_dat.RData")
 
 
 
