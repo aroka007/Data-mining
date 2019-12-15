@@ -3,6 +3,8 @@ library(tidyverse)
 library(Information)
 library(caTools)
 library(chron)
+library(tree.bins)
+library(rpart)
 
 ###########################################
 ###############  Load Data  ###############
@@ -741,7 +743,51 @@ dat$Return_Connect_Mins2_Con <- as.factor(dat$Return_Connect_Mins2_Con)
 # levels(dat$Return_Connect_Mins1_Con)
 dat$Return_Connect_Time_Mins_2 <- NULL
 
+######################################################################################################
+#Total Connections#
+####################
+dat$Total_Connections<-dat$Outbound_Connections+dat$Return_Connections
+dat$Total_Connections<-as.character(dat$Total_Connections)
+
+df.ratio<-dat[split,c("Total_Connections","Book_12Mo")]
+IV.ratio<-create_infotables(data=df.ratio,y="Book_12Mo")
+# plot_infotables(IV.ratio, "Total_Connections")
+
+fctr1 <- c(0,2,3,5,6,7)
+fctr2 <- c(1,4,8)
+
+ind1 <- which(dat$Total_Connections %in% fctr1)
+ind2 <- which(dat$Total_Connections %in% fctr2)
+
+dat$Total_Connections[ind1] <- "fctr1"
+dat$Total_Connections[ind2] <- "fctr2"
+
+dat$Total_Connections<-as.factor(dat$Total_Connections)
+dat$Book_12Mo <- as.factor(dat$Book_12Mo)
+
+# str(dat)
+#consolidate using training data
+consldt<-dat[split,] %>% 
+  select(TourCode,Outbound_Domestic_Gateway,Return_Domestic_Gateway,Book_12Mo)
+# library(tree.bins)
+# library(rpart)
+binned <- tree.bins(data = consldt, y = Book_12Mo,
+                    bin.nm = "Group.", control = rpart.control(cp = .001),
+                    return = "new.factors") 
+
+############################
+#####################
+###########################
+
+#Add consolidated categories for training data to dat df
+dat["TourCode_Groups"] <- as.factor(binned[[1]]$Categories[match(dat$TourCode,binned[[1]]$TourCode)])
+#dat["TourDate_Groups"] <- as.factor(binned[[2]]$Categories[match(dat$TourDate,binned[[2]]$TourDate)])# ###########################################################################################
+dat["Outbound_Domestic_Gateway_Groups"] <- as.factor(binned[[2]]$Categories[match(dat$Outbound_Domestic_Gateway,binned[[2]]$Outbound_Domestic_Gateway)])# ###########################################################################################
+dat["Return_Domestic_Gateway_Groups"] <- as.factor(binned[[3]]$Categories[match(dat$Return_Domestic_Gateway,binned[[3]]$Return_Domestic_Gateway)])# ###########################################################################################
+
+
 save(dat, file = "digger_dat.RData")
+
 
 
 
