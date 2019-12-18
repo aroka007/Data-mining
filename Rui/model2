@@ -250,7 +250,7 @@ plot(RF)
 
 # Make predictions #
 # library(caret)
-RF.class<- predict(RF, newdata=tours.rf[split.test,], type="response")
+RF.class<- RF$predicted
 confusionMatrix(table(RF.class,tours.rf[split.test,]$Book_12Mo),positive = "1")
 fscore<-confusionMatrix(table(RF.class,tours.rf[split.test,]$Book_12Mo),
                         positive = "1")$byClass["F1"]  
