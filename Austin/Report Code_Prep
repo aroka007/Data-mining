@@ -230,12 +230,14 @@ dat$hotel_rating <- 100 + (-4)*dat$Poor_Hotels +  dat$Good_Hotels + 2*(dat$Excel
 # summary(dat$hotel_rating)
 
 # prop <- dat %>% group_by(hotel_rating, Book_12Mo) %>% tally() %>%
-mutate(pct=n/sum(n))%>% filter(Book_12Mo==1)
+#mutate(pct=n/sum(n))%>% filter(Book_12Mo==1)
 dat$hotel_rating[ind] = 120
 
 #prop <- dat %>% group_by(hotel_rating, Book_12Mo) %>% tally() %>%
 #  mutate(pct=n/sum(n))%>% filter(Book_12Mo==1)
 #ggplot(prop, aes(hotel_rating, log(pct))) +geom_point()+geom_smooth(method = "lm")
+
+dat[ ,c("Poor_Hotels","Fair_Hotels","Good_Hotels","Excellent_Hotels")] <- NULL
 
 ################################################
 ################  meal_rating  ##############
