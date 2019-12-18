@@ -43,7 +43,7 @@ mode <- function(x) {
 means <- function(x) { mean(x, na.rm = TRUE) }
 
 ###################################################################################################
-load(file = "digger_dat2.RData")
+load(file = "digger_dat.RData")
 
 ## Get the names for every col
 Varnames <- as.data.frame(seq(from=1, to=ncol(dat)), col.names="index")
