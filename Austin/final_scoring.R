@@ -51,13 +51,8 @@ for (i in seq(1:34)){
 }
 
 
-for (i in seq(1:34)){
-  temp <- indice[i]
-  level1 <- levels(new.tours[,temp])
-  level2 <- levels(score[,temp])
-  diff1[[i]] <- setdiff(level1, level2)    ## setdiff(x,y) are are those elements in x but not in y
-  diff2[[i]] <- setdiff(level2, level1)
-}
+
+
 
 
 
@@ -98,6 +93,86 @@ for (i in seq(1:4)){
   score[ ,temp] <- as.factor(score[ ,temp])
 }
 
+
+
+##########################
+### Fix "State" levels ###
+##########################
+
+
+levels(score$State) <- c(levels(score$State), "GR","QL","SE","SF","SW","XS")   # Add 6 levels into scoring dataset
+levels(score$State)
+length(levels(score$State))
+
+###############################
+### Fix "SourceType" levels ###
+###############################
+
+temp <- indice[19]
+levels(model[,64])
+levels(score[,64])
+## "Advertising" "Catalog BRC" "Direct Mail" "Internet"    "Old Src IDs" "Organic Web" "Other"  "Outside Sal"
+## "Referral"    "SJMC"        "Web Booking"
+
+##  "Advertising" "Catalog BRC" "Direct Mail" "Internet"    "Old Src IDs" "Organic Web" "Other"       "Referral"   
+## "SJMC"        "Web Booking"
+
+## in the scoring dataset, "SourceType"(64) variable misses level "Outside Sal"
+xxx1 <- score[, 64]
+levels(score$SourceType) <- c(levels(score$SourceType), "Outside Sal")   # Add level "outside Sal" into scoring dataset
+
+
+##############################################
+### Fix "Outbound_Domestic_Gateway" levels ###
+##############################################
+diff1[[23]]
+indice[23]
+##  75
+## "ABE" "ABI" "AEX" "BMI" "BZN" "C"   "CHO" "CLD" "ERI" "EWN" "HRL" "MHT" "MKG" "PAR" "PIR" "SBN" "SJT" "STC"
+## "SWF" "TUP" "YLW" "YUL" "YWG" "YXE"
+## Above levels missing in the scoring dataset
+
+length(levels(score[,75]))
+levels(score[,75]) <- c(levels(score[,75]), diff1[[23]])   
+length(levels(score[,75]))
+
+##############################################
+############  Fix Time levels  ###############
+##############################################
+## 76, 82, 85, 91
+ind <- grep("_Time$",names(score))
+
+## convert to time 
+for (i in seq(1:4)){
+  temp <- ind[i]
+  model[,temp] <- times(model[,temp])
+}
+
+## only keep hour
+for (i in seq(1:4)){
+  temp <- ind[i]
+  score[,temp] <- hours(score[,temp])
+}
+
+for (i in seq(1:4)){
+  temp <- ind[i]
+  model[ ,temp] <- as.factor(model[ ,temp])
+  score[ ,temp] <- as.factor(score[ ,temp])
+}
+
+
+## Shows we need to add level "2" into scoring dataset for variable 76 and 91.
+levels(score[ ,76])
+levels(model[ ,76])
+levels(score[,76]) <- c(levels(score[,76]), "2")   
+
+levels(score[ ,91])
+levels(model[ ,91])
+levels(score[,91]) <- c(levels(score[,91]), "2") 
+
+
+
+
 #####################################################
 ################  Data Consolidation  ###############
 #####################################################
@@ -115,7 +190,7 @@ Varnames$name <- names(dat)
 ##########  1. Tour_Days  ###############
 #########################################
 
-fctr1 <- c(6,4,17,9,11,15,12,21,24)
+fctr1 <- c(3,6,4,17,9,11,15,12,21,24)
 fctr2 <- c(16,13,10,14,23,18,1)
 fctr3 <- c(7,8,19)
 score$Tour_Days_Con <- as.character(score$Tour_Days)
@@ -189,7 +264,7 @@ score$Recommend_GAT <- as.factor(score$Recommend_GAT)
 #######################################
 ########## TravelAgain  ###############
 #######################################
-ind <- which(score$TravelAgain == 0)
+ind <- which(score$TravelAgain %in% c(0,3))
 # length(ind)
 # 705 "0"s, we will assign "0" to group "2"
 score$TravelAgain[ind] = 2
@@ -265,6 +340,9 @@ score$hotel_rating[ind] = 120
 #prop <- dat %>% group_by(hotel_rating, Book_12Mo) %>% tally() %>%
 #  mutate(pct=n/sum(n))%>% filter(Book_12Mo==1)
 #ggplot(prop, aes(hotel_rating, log(pct))) +geom_point()+geom_smooth(method = "lm")
+
+score[ ,c("Poor_Hotels","Fair_Hotels","Good_Hotels","Excellent_Hotels")] <- NULL
+
 
 ################################################
 ################  meal_rating  ##############
@@ -708,6 +786,9 @@ score.imp[index.cat]<-as.data.frame(mapply(impute,x=score.imp[index.cat],y = Mod
 
 # sort(sapply(score.imp, function(x) sum(is.na(x))),decreasing = T)
 
+
+
+
 # create missing value flag #
 score.imp[paste(names(score.imp)[index.na], "NA", sep=".")] <- ifelse(
   is.na(score[index.na]), 1, 0)
@@ -718,10 +799,38 @@ score.imp[grep("NA$",names(score.imp))]<-lapply(
 
 
 
+
 ############
 ##############
 #############
-score.rf <- score.imp
+score.rf <- score.imp[vars.rf[-26]]
+
+
+
+for (i in length(score.rf)){
+  levels(score.rf[,i]) <- levels(tours.rf[,i])
+}
+
+
+diff1 <- vector(mode = "list", length = length(score.rf))   # create an empty list
+diff2 <- vector(mode = "list", length = length(score.rf))   # create an empty list
+for (i in length(score.rf)){
+  level1 <- levels(tours.rf[,i])
+  level2 <- levels(score.rf[,i])
+  diff1[[i]] <- setdiff(level1, level2)    ## setdiff(x,y) are are those elements in x but not in y
+  diff2[[i]] <- setdiff(level2, level1)
+  cat(str(score.rf[,i]))
+}
+
+for (f in names(tours.rf)) {
+  if (class(tours.rf[[f]])=="character") {
+    levels <- unique(c(tours.rf[[f]], score.rf[[f]]))
+    tours.rf[[f]] <- as.integer(factor(tours.rf[[f]], levels=levels))
+    score.rf[[f]]  <- as.integer(factor(score.rf[[f]],  levels=levels))
+  }
+}
+
+
 
 library(caret)
 RF.class<- predict(RF, newdata=score.rf, type="response")
